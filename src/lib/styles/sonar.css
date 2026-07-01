@@ -1,0 +1,908 @@
+/*
+ * Sonar global styles. Imported once from `+page.svelte`; applies to the
+ * page shell, every nested component (BubbleViz, ClusterPanel, …), and the
+ * pure-CSS radar background. Lives outside the Svelte component graph so
+ * the page + BubbleViz don't carry ~250 lines of inline <style> each — they
+ * were already global in effect (every rule keys off `.sonar-root` or
+ * `.sonar-*` class qualifiers, with the few component-scoped rules
+ * explicitly wrapped in `:global()`), so moving them to an external CSS
+ * file is functionally a no-op.
+ */
+
+/* ── Page shell + theme tokens ──────────────────────────────────────────── */
+
+/* Whole-app flex column. Header + filter bar are flex-shrink: 0; the
+ * main content slot fills the rest with `flex: 1; min-height: 0`. With
+ * the inline filter row added above the columns, this prevents the
+ * page from exceeding 100vh. */
+.sonar-root {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	overscroll-behavior: none;
+	background: var(--sonar-bg);
+	color: var(--sonar-text);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+/* Internal scroll containers shouldn't chain bounce to the page either. */
+.sonar-root .sonar-main aside,
+.sonar-root .sonar-inline-filter-list,
+.sonar-root .sonar-inline-filter-popover {
+	overscroll-behavior: contain;
+}
+.sonar-root > .sonar-header,
+.sonar-root > .sonar-inline-filters {
+	flex-shrink: 0;
+}
+.sonar-root > .sonar-main {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	display: flex;
+	align-items: stretch;
+}
+
+.sonar-root[data-theme='light'] {
+	--sonar-bg: #f5f5f7;
+	--sonar-panel: #ffffff;
+	--sonar-panel-2: #f8f8fa;
+	--sonar-text: #15151a;
+	--sonar-text-muted: #6b7280;
+	--sonar-border: #e5e7eb;
+	--sonar-accent: #4a1ee3;
+	/* Brand-chip tokens — Slack purple, brand purple, Asana coral. Light
+	 * theme uses the brand hex directly because they're contrasty enough
+	 * on a white panel. Dark mode lightens them (see below). */
+	--sonar-brand-fg: #4a1ee3;
+	--sonar-brand-border: rgba(74, 30, 227, 0.4);
+	--sonar-brand-bg: rgba(74, 30, 227, 0.06);
+	--sonar-slack-fg: #4a154b;
+	--sonar-slack-border: rgba(74, 21, 75, 0.4);
+	--sonar-slack-bg: rgba(74, 21, 75, 0.06);
+	--sonar-asana-fg: #d6444f;
+	--sonar-asana-border: rgba(214, 68, 79, 0.4);
+	--sonar-asana-bg: rgba(214, 68, 79, 0.06);
+}
+
+.sonar-root[data-theme='dark'] {
+	--sonar-bg: #0d0d12;
+	--sonar-panel: #16161e;
+	--sonar-panel-2: #1c1c26;
+	--sonar-text: #e8e8ee;
+	--sonar-text-muted: #9aa0aa;
+	--sonar-border: #2a2a36;
+	--sonar-accent: #6d44eb;
+	/* Brightened brand chips so they read on the dark panel — the literal
+	 * brand hexes (#4a154b especially) are too dark to be legible here. */
+	--sonar-brand-fg: #a78bff;
+	--sonar-brand-border: rgba(167, 139, 255, 0.45);
+	--sonar-brand-bg: rgba(167, 139, 255, 0.1);
+	--sonar-slack-fg: #d8a8e0;
+	--sonar-slack-border: rgba(216, 168, 224, 0.4);
+	--sonar-slack-bg: rgba(216, 168, 224, 0.08);
+	--sonar-asana-fg: #ff8b8b;
+	--sonar-asana-border: rgba(255, 139, 139, 0.4);
+	--sonar-asana-bg: rgba(255, 139, 139, 0.1);
+}
+
+.sonar-header { background: #4a1ee3; }
+
+/* ── Panel + utility classes (shared across sonar components) ──────────── */
+
+.sonar-root .sonar-panel {
+	background: var(--sonar-panel);
+	border: 1px solid var(--sonar-border);
+	color: var(--sonar-text);
+}
+.sonar-root .sonar-text { color: var(--sonar-text); }
+.sonar-root .sonar-muted { color: var(--sonar-text-muted); }
+.sonar-root .sonar-divider { border-color: var(--sonar-border); }
+.sonar-root .sonar-input {
+	background: var(--sonar-panel-2);
+	border: 1px solid var(--sonar-border);
+	color: var(--sonar-text);
+}
+.sonar-root .sonar-pill {
+	background: var(--sonar-panel-2);
+	border-color: var(--sonar-border);
+	color: var(--sonar-text-muted);
+}
+.sonar-root .sonar-pill-active {
+	background: rgba(74, 30, 227, 0.1);
+	border-color: var(--sonar-accent);
+	color: var(--sonar-accent);
+}
+.sonar-root[data-theme='dark'] .sonar-pill-active {
+	background: rgba(109, 68, 235, 0.18);
+}
+/* List-row CTA — the overview's Hot / Largest / Recently filed entries
+ * are buttons; without an affordance they read as static text and users
+ * don't realize they navigate. Each row gets a faint chevron at the
+ * right edge that pops on hover, plus an accent left-border lift. */
+.sonar-root .sonar-row {
+	color: var(--sonar-text);
+	cursor: pointer;
+	border: 1px solid transparent;
+	border-left-width: 3px;
+	transition: background 0.12s ease, border-color 0.12s ease, padding 0.12s ease;
+	position: relative;
+}
+.sonar-root .sonar-row::after {
+	content: '›';
+	font-size: 18px;
+	line-height: 1;
+	color: var(--sonar-text-muted);
+	opacity: 0.35;
+	transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease;
+	flex-shrink: 0;
+}
+.sonar-root .sonar-row:hover {
+	background: var(--sonar-panel-2);
+	border-color: var(--sonar-border);
+	border-left-color: var(--sonar-accent);
+}
+.sonar-root .sonar-row:hover::after {
+	opacity: 1;
+	transform: translateX(2px);
+	color: var(--sonar-accent);
+}
+.sonar-root .sonar-row:focus-visible {
+	outline: 2px solid var(--sonar-accent);
+	outline-offset: 2px;
+}
+.sonar-root .sonar-row-active {
+	background: var(--sonar-panel-2);
+	border-left-color: var(--sonar-accent);
+}
+
+/* ── FiltersMenu tab strip ────────────────────────────────────────────── */
+
+/*
+ * Tab strip sits below the menu header and separates People / Attributes /
+ * Clusters. The border-b-2 indicator is driven by `.sonar-tab-active`; the
+ * faint baseline under the inactive tabs comes from the strip itself so the
+ * active tab "lifts" cleanly even when only one tab is selected.
+ */
+.sonar-root .sonar-tabstrip {
+	border-bottom: 1px solid var(--sonar-border);
+}
+.sonar-root .sonar-tab {
+	color: var(--sonar-text-muted);
+	border-color: transparent;
+	background: transparent;
+	font-weight: 500;
+	margin-bottom: -1px;
+	cursor: pointer;
+	transition: color 0.15s ease, border-color 0.15s ease;
+}
+.sonar-root .sonar-tab:hover {
+	color: var(--sonar-text);
+}
+.sonar-root .sonar-tab-active {
+	color: var(--sonar-accent);
+	border-color: var(--sonar-accent);
+}
+.sonar-root .sonar-tab-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: rgba(74, 30, 227, 0.12);
+	color: var(--sonar-accent);
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 1;
+}
+.sonar-root[data-theme='dark'] .sonar-tab-badge {
+	background: rgba(109, 68, 235, 0.22);
+}
+
+/* ── Active-filter chip bar ───────────────────────────────────────────── */
+
+/*
+ * Slim chip bar that appears above the split layout whenever any filter
+ * is active. One chip per multi-select entry so the user can drop a
+ * single value without opening the menu. Visually quiet but legible —
+ * not a hero element, but the first thing a returning user sees when
+ * they're confused why "no bugs" are showing.
+ */
+/* ── Inline filters bar ───────────────────────────────────────────────────
+ * Always-visible filter row directly under the header. Each filter is a
+ * compact trigger pill (search field, native <select>, or InlineMultiPicker
+ * popover) so the user can see and change every active filter without
+ * opening a menu. Wraps on narrow viewports.
+ */
+.sonar-root .sonar-inline-filters {
+	background: var(--sonar-panel-2);
+	border-bottom: 1px solid var(--sonar-border);
+}
+.sonar-root .sonar-inline-filters-row {
+	max-width: 80rem;
+	margin: 0 auto;
+	padding: 10px 24px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.sonar-root .sonar-inline-search {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 10px;
+	height: 30px;
+	background: var(--sonar-panel);
+	border: 1px solid var(--sonar-border);
+	border-radius: 6px;
+	color: var(--sonar-text-muted);
+	min-width: 220px;
+	flex: 1 1 220px;
+	max-width: 320px;
+}
+.sonar-root .sonar-inline-search:focus-within {
+	border-color: var(--sonar-accent);
+	color: var(--sonar-text);
+}
+.sonar-root .sonar-inline-search-input {
+	flex: 1;
+	background: transparent;
+	border: 0;
+	outline: 0;
+	color: var(--sonar-text);
+	font-size: 13px;
+	min-width: 0;
+}
+.sonar-root .sonar-inline-search-input::placeholder {
+	color: var(--sonar-text-muted);
+}
+.sonar-root .sonar-inline-filter-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 10px;
+	height: 30px;
+	background: var(--sonar-panel);
+	border: 1px solid var(--sonar-border);
+	border-radius: 6px;
+	color: var(--sonar-text);
+	font-size: 13px;
+	cursor: pointer;
+	transition: border-color 0.12s ease, background 0.12s ease;
+	white-space: nowrap;
+}
+.sonar-root .sonar-inline-filter-btn:hover {
+	border-color: var(--sonar-accent);
+}
+.sonar-root .sonar-inline-filter-btn.is-open {
+	border-color: var(--sonar-accent);
+}
+.sonar-root .sonar-inline-filter-btn.is-active {
+	background: rgba(74, 30, 227, 0.08);
+	border-color: rgba(74, 30, 227, 0.4);
+	color: var(--sonar-accent);
+}
+.sonar-root[data-theme='dark'] .sonar-inline-filter-btn.is-active {
+	background: rgba(109, 68, 235, 0.18);
+	border-color: rgba(109, 68, 235, 0.5);
+}
+.sonar-root .sonar-inline-filter-btn-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 999px;
+	background: var(--sonar-accent);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+}
+.sonar-root .sonar-inline-select {
+	height: 30px;
+	padding: 0 26px 0 10px;
+	background: var(--sonar-panel);
+	border: 1px solid var(--sonar-border);
+	border-radius: 6px;
+	color: var(--sonar-text);
+	font-size: 13px;
+	cursor: pointer;
+	appearance: none;
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+}
+.sonar-root .sonar-inline-select.is-active {
+	background-color: rgba(74, 30, 227, 0.08);
+	border-color: rgba(74, 30, 227, 0.4);
+	color: var(--sonar-accent);
+}
+.sonar-root[data-theme='dark'] .sonar-inline-select.is-active {
+	background-color: rgba(109, 68, 235, 0.18);
+	border-color: rgba(109, 68, 235, 0.5);
+}
+.sonar-root .sonar-inline-clear-all {
+	margin-left: auto;
+	padding: 0 10px;
+	height: 30px;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	color: var(--sonar-text-muted);
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.sonar-root .sonar-inline-clear-all:hover {
+	color: var(--sonar-text);
+	text-decoration: underline;
+}
+
+/* ── Multi-picker popover (rendered position:fixed under its trigger) ── */
+.sonar-root .sonar-inline-filter-popover {
+	position: fixed;
+	z-index: 60;
+	max-width: 360px;
+	max-height: 360px;
+	padding: 10px;
+	background: var(--sonar-panel);
+	border: 1px solid var(--sonar-border);
+	border-radius: 8px;
+	box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.sonar-root[data-theme='dark'] .sonar-inline-filter-popover {
+	box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+.sonar-root .sonar-inline-filter-search {
+	width: 100%;
+}
+.sonar-root .sonar-inline-filter-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	overflow-y: auto;
+	max-height: 260px;
+	padding-right: 4px;
+}
+.sonar-root .sonar-inline-filter-footer {
+	border-top: 1px solid var(--sonar-border);
+	padding-top: 6px;
+	text-align: right;
+}
+
+/* ── Hot bubble pulse animation ───────────────────────────────────────── */
+
+/*
+ * Two concentric rings expand + fade beneath each hot bubble on a 1.8s
+ * loop, with the second ring delayed 0.9s so the radar-ping effect feels
+ * continuous instead of stuttery. The animation is purely visual — the
+ * numeric badge in the top-right of the bubble carries the actual count.
+ *
+ * Using transform: scale() (not r animation) lets the GPU do the work
+ * and stays cheap even with 20+ hot bubbles on screen. transform-box:
+ * fill-box makes the transform-origin the geometric center of the
+ * circle's own bounding box rather than the SVG viewport origin.
+ */
+@keyframes sonar-hot-pulse {
+	0% {
+		transform: scale(1);
+		stroke-opacity: 0.7;
+	}
+	100% {
+		transform: scale(1.55);
+		stroke-opacity: 0;
+	}
+}
+.sonar-hot-pulse {
+	transform-box: fill-box;
+	transform-origin: center center;
+	animation: sonar-hot-pulse 1.8s ease-out infinite;
+	pointer-events: none;
+}
+.sonar-hot-pulse-delayed {
+	animation-delay: 0.9s;
+}
+@media (prefers-reduced-motion: reduce) {
+	.sonar-hot-pulse {
+		animation: none;
+		stroke-opacity: 0.35;
+	}
+}
+
+/* ── Bug-card focus flash ─────────────────────────────────────────────── */
+
+/*
+ * Brief visual confirmation when the user clicks a "Recently filed" row
+ * in the right-panel overview: the panel swaps to the cluster detail,
+ * scrolls to that specific bug, and flashes its card so the user lands
+ * on what they clicked instead of having to scan the cluster's bug list.
+ * box-shadow (not border) so the card's existing border stays put and
+ * the flash doesn't shift the layout by 2px.
+ */
+@keyframes sonar-bug-flash {
+	0% { box-shadow: 0 0 0 0 rgba(74, 30, 227, 0); }
+	15% { box-shadow: 0 0 0 4px rgba(74, 30, 227, 0.55); }
+	100% { box-shadow: 0 0 0 0 rgba(74, 30, 227, 0); }
+}
+.sonar-root .sonar-bug-flash {
+	animation: sonar-bug-flash 1.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+	.sonar-root .sonar-bug-flash {
+		animation: none;
+		box-shadow: 0 0 0 3px rgba(74, 30, 227, 0.5);
+	}
+}
+
+/* ── Hover-highlight transition ───────────────────────────────────────── */
+
+/*
+ * Smooth fade for the hover-sync between right-panel rows and bubbles on
+ * the left. The d3 helper toggles the `opacity` attribute on each
+ * <g.sonar-bubble> + <line>; CSS handles the easing so the visual flip
+ * feels alive, not hard-cut.
+ */
+.sonar-root .sonar-bubble {
+	transition: opacity 0.18s ease;
+}
+.sonar-root svg line {
+	transition: opacity 0.18s ease;
+}
+
+/* ── Two-column resize handle ──────────────────────────────────────────── */
+
+/*
+ * The outer .sonar-split-handle is the hit target — 18px wide so it's easy
+ * to grab, transparent so it doesn't visually take up that much space. The
+ * inner .sonar-split-grip is the slim visible bar in the middle.
+ */
+.sonar-split-handle {
+	flex: 0 0 18px;
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+	cursor: ew-resize;
+	touch-action: none;
+	background: transparent;
+	outline: none;
+}
+.sonar-split-grip {
+	width: 4px;
+	border-radius: 2px;
+	background: var(--sonar-border);
+	transition: background 0.15s ease, width 0.15s ease;
+	margin: 0;
+}
+.sonar-split-handle:hover .sonar-split-grip,
+.sonar-split-handle:focus-visible .sonar-split-grip,
+.sonar-split-handle-active .sonar-split-grip {
+	background: var(--sonar-accent);
+	width: 6px;
+}
+
+/* ── Pure-CSS sonar radar background (used by BubbleViz.svelte) ────────── */
+
+/*
+ * Two stacked layers compose the look:
+ *   1. base — radial gradient (navy core in dark mode, soft cyan in light)
+ *   2. ::before — concentric range rings + radial spokes
+ * The svg sits at z-index: 1 above both.
+ *
+ * Theme is driven by CSS custom properties on .sonar-radar — dark is the
+ * default; the .sonar-root[data-theme='light'] override below swaps the 4
+ * base stops + 2 line colors when the page is in light mode.
+ */
+.sonar-radar {
+	/* Dark mode tokens (default). */
+	--radar-base-1: rgba(20, 110, 110, 0.32);
+	--radar-base-2: rgba(8, 38, 60, 0.55);
+	--radar-base-3: rgba(3, 14, 28, 0.88);
+	--radar-base-4: #020912;
+	--radar-line-strong: rgba(120, 230, 210, 0.22);
+	--radar-line-weak: rgba(120, 230, 210, 0.14);
+
+	position: relative;
+	/*
+	 * Fills the parent container vertically (set by the page-level flex
+	 * column). min-height keeps the scope readable on very short viewports.
+	 */
+	width: 100%;
+	height: 100%;
+	min-height: 360px;
+	border-radius: 8px;
+	/*
+	 * overflow: visible so the hover tooltip (rendered as a child of this
+	 * element, absolutely positioned at the bubble's SVG-pixel coords) can
+	 * extend past the radar's rounded edges without being clipped. The
+	 * rings/spokes inherit a matching border-radius on ::before so the
+	 * radar's visual still clips cleanly at the rounded corners — see
+	 * the ::before block below. Bubbles + labels are kept inside the radar
+	 * by the d3 clamp logic in BubbleViz, so they never need to escape.
+	 */
+	overflow: visible;
+	background:
+		radial-gradient(
+			ellipse 100% 100% at center,
+			var(--radar-base-1) 0%,
+			var(--radar-base-2) 45%,
+			var(--radar-base-3) 80%,
+			var(--radar-base-4) 100%
+		),
+		var(--radar-base-4);
+}
+
+/*
+ * Light-mode radar. Pale cyan field, darker teal rings + spokes — the
+ * inversion of the dark scope. Bubbles render with near-black strokes
+ * (handled in BubbleViz's render() based on the same `theme` prop) so they
+ * read on this lighter background.
+ */
+.sonar-root[data-theme='light'] .sonar-radar {
+	--radar-base-1: rgba(150, 215, 225, 0.55);
+	--radar-base-2: rgba(180, 210, 225, 0.7);
+	--radar-base-3: rgba(210, 225, 235, 0.88);
+	--radar-base-4: #e8eef3;
+	--radar-line-strong: rgba(15, 80, 110, 0.20);
+	--radar-line-weak: rgba(15, 80, 110, 0.13);
+}
+
+/* ── Drill breadcrumb (DrillBreadcrumb.svelte) ─────────────────────────── */
+
+/*
+ * Replaces a small text-xs grey crumb-strip with a chunkier pill row that
+ * surfaces "how deep am I?" at a glance. The leading depth chip is the
+ * most-glanceable signal — a single big number telling the user how many
+ * levels in they are; the trail of clickable chips lets them jump to any
+ * ancestor (the current location is non-interactive). All colors flow
+ * through --sonar-accent and the per-theme text tokens so it inverts
+ * cleanly between dark + light radar themes.
+ */
+.sonar-breadcrumb {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 8px;
+}
+.sonar-breadcrumb-depth {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px;
+	border-radius: 9999px;
+	font-size: 10.5px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--sonar-text-muted);
+	background: color-mix(in srgb, var(--sonar-text-muted) 12%, transparent);
+}
+.sonar-breadcrumb-depth-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9999px;
+	background: var(--sonar-accent);
+	color: #fff;
+	font-size: 11px;
+	letter-spacing: 0;
+}
+.sonar-breadcrumb-trail {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+.sonar-breadcrumb-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 10px;
+	border-radius: 9999px;
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.4;
+	border: 1px solid var(--sonar-accent);
+	color: var(--sonar-accent);
+	background: transparent;
+	cursor: pointer;
+	transition: background-color 0.12s ease, color 0.12s ease;
+	white-space: nowrap;
+	/* max-width caps the chip width; min-width:0 lets it shrink below its
+	 * content's natural size inside the flex trail so the inner label can
+	 * actually be truncated. The text-overflow:ellipsis lives on the inner
+	 * .sonar-breadcrumb-chip-label span — inline-flex containers don't
+	 * apply ellipsis to direct text children. */
+	max-width: 220px;
+	min-width: 0;
+	overflow: hidden;
+}
+.sonar-breadcrumb-chip-label {
+	display: block;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+button.sonar-breadcrumb-chip:hover {
+	background: color-mix(in srgb, var(--sonar-accent) 14%, transparent);
+}
+.sonar-breadcrumb-chip-current {
+	background: var(--sonar-accent);
+	color: #fff;
+	cursor: default;
+	border-color: transparent;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--sonar-accent) 22%, transparent);
+}
+.sonar-breadcrumb-sep {
+	color: var(--sonar-text-muted);
+	font-size: 16px;
+	line-height: 1;
+	font-weight: 400;
+	opacity: 0.6;
+}
+
+/* ── Custom hover tooltip (replaces the native SVG <title>) ────────────── */
+
+/*
+ * Mounts/unmounts instantly on bubble mouseenter/leave — no OS-controlled
+ * delay, no system styling. Positioned absolutely inside .sonar-radar at
+ * the bubble's SVG-pixel coordinates; the transform centers horizontally
+ * and offsets vertically (above by default, below when .flipped). The
+ * radar itself uses overflow:visible (see .sonar-radar) so tooltips near
+ * the radar's edges can extend past the boundary instead of being clipped.
+ */
+.sonar-bubble-tooltip {
+	position: absolute;
+	z-index: 2;
+	transform: translate(-50%, -100%);
+	pointer-events: none;
+	min-width: 120px;
+	max-width: 260px;
+	padding: 8px 10px;
+	border-radius: 6px;
+	background: rgba(20, 20, 30, 0.95);
+	color: rgba(255, 255, 255, 0.95);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+	font-size: 12px;
+	line-height: 1.35;
+	white-space: normal;
+	/* Subtle outer ring keeps the tooltip readable against either the dark
+	 * navy or light cyan radar field — neither background is uniform, so a
+	 * 1px highlight gives the tooltip a crisp edge on both. */
+	border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.sonar-bubble-tooltip.flipped {
+	transform: translate(-50%, 0);
+}
+.sonar-tt-label {
+	font-weight: 600;
+}
+.sonar-tt-meta {
+	margin-top: 2px;
+	font-size: 11px;
+	opacity: 0.78;
+}
+.sonar-tt-hint {
+	margin-top: 4px;
+	font-size: 10px;
+	font-style: italic;
+	opacity: 0.7;
+}
+
+.sonar-radar::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	/*
+	 * Inherit the radar's rounded corners so the rings/spokes don't render
+	 * with sharp corners past the parent's border-radius. Needed because
+	 * the parent now uses overflow:visible (see .sonar-radar above) to let
+	 * the hover tooltip extend past the radar boundary.
+	 */
+	border-radius: 8px;
+	background:
+		repeating-radial-gradient(
+			circle at center,
+			transparent 0,
+			transparent 59px,
+			var(--radar-line-strong) 60px,
+			var(--radar-line-strong) 61px
+		),
+		repeating-conic-gradient(
+			from 0deg at center,
+			transparent 0deg,
+			transparent 29.5deg,
+			var(--radar-line-weak) 30deg,
+			transparent 30.5deg
+		);
+	/*
+	 * Mask sized to a 1500px circle with black up to 80% so the rings extend
+	 * fully to all four panel edges. The outer rings are clipped by the
+	 * rectangle (via overflow:hidden), which reads correctly as "looking
+	 * through a rectangular viewport at a larger circular scope."
+	 */
+	-webkit-mask-image: radial-gradient(circle 1500px at center, black 80%, transparent 100%);
+	mask-image: radial-gradient(circle 1500px at center, black 80%, transparent 100%);
+}
+
+/* ── Archive pool overlay ─────────────────────────────────────────────── */
+
+/*
+ * Pinned grayscale "Archived" bubble at the bottom-right of the radar.
+ * Lives outside the d3 force simulation (sibling of <svg>) so it persists
+ * at every drill level and never gets shuffled by the bubble layout.
+ *
+ * Visual brief:
+ *   - Circular, ~140px, grayscale gradient that matches the radar field
+ *     (lighter in dark mode, darker in light mode for contrast).
+ *   - Soft drop-shadow so it reads as "above" the radar rings.
+ *   - Subtle pulse-on-hover hint that it's interactive.
+ *   - Drop-target state (drag-in-progress) brightens the ring + scales up
+ *     slightly so the user knows release will commit the archive.
+ */
+.sonar-root .sonar-archive-pool {
+	position: absolute;
+	right: 16px;
+	bottom: 16px;
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.18);
+	background: radial-gradient(circle at 30% 30%, rgba(180, 180, 190, 0.6), rgba(60, 60, 70, 0.85) 70%);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.3),
+		inset 0 0 24px rgba(0, 0, 0, 0.25);
+	cursor: pointer;
+	color: rgba(255, 255, 255, 0.92);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	z-index: 3;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.sonar-root[data-theme='light'] .sonar-archive-pool {
+	border-color: rgba(15, 23, 42, 0.18);
+	background: radial-gradient(circle at 30% 30%, rgba(230, 230, 236, 0.95), rgba(140, 140, 150, 0.95) 70%);
+	color: rgba(21, 21, 26, 0.92);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.18),
+		inset 0 0 18px rgba(0, 0, 0, 0.08);
+}
+.sonar-root .sonar-archive-pool.is-empty {
+	opacity: 0.55;
+}
+.sonar-root .sonar-archive-pool:hover {
+	transform: scale(1.04);
+	border-color: rgba(255, 255, 255, 0.35);
+}
+.sonar-root[data-theme='light'] .sonar-archive-pool:hover {
+	border-color: rgba(15, 23, 42, 0.35);
+}
+.sonar-root .sonar-archive-pool.is-active {
+	border-color: var(--sonar-accent);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.3),
+		0 0 0 3px color-mix(in srgb, var(--sonar-accent) 35%, transparent),
+		inset 0 0 24px rgba(0, 0, 0, 0.25);
+}
+.sonar-root .sonar-archive-pool.is-drop-target {
+	transform: scale(1.1);
+	border-color: var(--sonar-accent);
+	box-shadow:
+		0 12px 32px rgba(0, 0, 0, 0.4),
+		0 0 0 4px color-mix(in srgb, var(--sonar-accent) 50%, transparent),
+		inset 0 0 24px rgba(0, 0, 0, 0.2);
+	opacity: 1;
+}
+.sonar-root .sonar-archive-pool-inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	pointer-events: none;
+}
+.sonar-root .sonar-archive-pool-count {
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1;
+}
+.sonar-root .sonar-archive-pool-label {
+	font-size: 9px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	opacity: 0.85;
+}
+.sonar-root .sonar-archive-pool-hint {
+	font-size: 9px;
+	margin-top: 2px;
+	color: var(--sonar-accent);
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+.sonar-root[data-theme='dark'] .sonar-archive-pool-hint {
+	color: #c4b5fd;
+}
+@media (prefers-reduced-motion: reduce) {
+	.sonar-root .sonar-archive-pool,
+	.sonar-root .sonar-archive-pool:hover,
+	.sonar-root .sonar-archive-pool.is-drop-target {
+		transform: none;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+}
+
+/* ── Mid-drag dim + Archive pool emphasis ─────────────────────────────── */
+
+/*
+ * While a bug card is being dragged (data-dragging-bug toggled on the
+ * .sonar-root in ClusterPanel's dragstart/dragend handlers) the entire
+ * radar SVG fades back so the eye is pulled to the Archive pool. The
+ * pool itself is OUTSIDE the SVG (sibling element), so dimming the SVG
+ * lets it stay at full brightness with an extra scale + accent ring.
+ *
+ * dragend fires regardless of whether the user dropped on the pool or
+ * cancelled, so this state always clears.
+ */
+.sonar-root .sonar-radar svg {
+	transition: opacity 0.18s ease;
+}
+.sonar-root[data-dragging-bug='true'] .sonar-radar svg {
+	opacity: 0.2;
+}
+.sonar-root[data-dragging-bug='true'] .sonar-archive-pool {
+	transform: scale(1.08);
+	border-color: var(--sonar-accent);
+	box-shadow:
+		0 12px 32px rgba(0, 0, 0, 0.35),
+		0 0 0 4px color-mix(in srgb, var(--sonar-accent) 40%, transparent),
+		inset 0 0 24px rgba(0, 0, 0, 0.2);
+	opacity: 1;
+}
+.sonar-root[data-dragging-bug='true'] .sonar-archive-pool.is-drop-target {
+	/* Stronger over-the-target state composes on top of the base drag emphasis. */
+	transform: scale(1.14);
+	box-shadow:
+		0 14px 36px rgba(0, 0, 0, 0.45),
+		0 0 0 5px color-mix(in srgb, var(--sonar-accent) 55%, transparent),
+		inset 0 0 24px rgba(0, 0, 0, 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+	.sonar-root[data-dragging-bug='true'] .sonar-archive-pool,
+	.sonar-root[data-dragging-bug='true'] .sonar-archive-pool.is-drop-target {
+		transform: none;
+	}
+}
+
+/* ── Draggable bug cards (cluster panel) ──────────────────────────────── */
+
+.sonar-root .sonar-bug-card-draggable {
+	cursor: grab;
+}
+.sonar-root .sonar-bug-card-draggable:active {
+	cursor: grabbing;
+}
+.sonar-root .sonar-bug-card-draggable[draggable='true'] {
+	/* Soft-hint that the card can be picked up. Stays subtle so it
+	 * doesn't compete with the severity badge / delete icon. */
+	transition: box-shadow 0.12s ease;
+}
+.sonar-root .sonar-bug-card-draggable[draggable='true']:hover {
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}

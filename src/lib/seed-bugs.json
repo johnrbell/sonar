@@ -1,0 +1,1048 @@
+[
+	{
+		"_id": "nmb-199",
+		"title": "SSO login redirects in an endless loop",
+		"description": "After clicking \"Sign in with SSO\" the browser bounces between the identity provider and Nimbus indefinitely and never lands on the dashboard.",
+		"reporter": "Taylor Brooks",
+		"source": "slack",
+		"areas": [
+			"Login / SSO"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-05-11T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155200.000000",
+				"reporter": "Taylor Brooks",
+				"addedAt": "2026-05-11T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Auth / SSO"
+		}
+	},
+	{
+		"_id": "nmb-198",
+		"title": "SAML SSO stuck in a redirect loop after password reset",
+		"description": "Users who just reset their password get caught in an SSO redirect loop and cannot complete login.",
+		"reporter": "Taylor Brooks",
+		"source": "internal",
+		"areas": [
+			"Login / SSO"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-04-10T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Auth / SSO"
+		}
+	},
+	{
+		"_id": "nmb-197",
+		"title": "Google SSO login loops back to the sign-in page",
+		"description": "Google SSO authenticates but then redirects the user right back to the Nimbus sign-in page.",
+		"reporter": "Taylor Brooks",
+		"source": "slack",
+		"areas": [
+			"Login / SSO"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-03-09T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155201.000000",
+				"reporter": "Taylor Brooks",
+				"addedAt": "2026-03-09T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Auth / SSO"
+		}
+	},
+	{
+		"_id": "nmb-196",
+		"title": "Okta SSO redirect loop on first login of the day",
+		"description": "The first Okta SSO login each morning loops several times before failing with a generic error.",
+		"reporter": "Taylor Brooks",
+		"source": "slack",
+		"areas": [
+			"Login / SSO"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-02-08T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155202.000000",
+				"reporter": "Taylor Brooks",
+				"addedAt": "2026-02-08T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Auth / SSO"
+		},
+		"responders": [
+			"Taylor Brooks",
+			"Jamie Foster"
+		]
+	},
+	{
+		"_id": "nmb-195",
+		"title": "SSO users bounced back to the login screen repeatedly",
+		"description": "Multiple customers report SSO logging them in and immediately kicking them back to the login screen.",
+		"reporter": "Taylor Brooks",
+		"source": "internal",
+		"areas": [
+			"Login / SSO"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Mobile",
+		"createdAt": "2026-01-07T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Auth / SSO"
+		}
+	},
+	{
+		"_id": "nmb-194",
+		"title": "Dashboard widgets show a spinner forever and never load",
+		"description": "All widgets on the main dashboard display an infinite loading spinner and no data ever appears.",
+		"reporter": "Skyler Ross",
+		"source": "slack",
+		"areas": [
+			"Dashboard"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Platform",
+		"createdAt": "2026-05-06T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155203.000000",
+				"reporter": "Skyler Ross",
+				"addedAt": "2026-05-06T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Dashboard widgets"
+		}
+	},
+	{
+		"_id": "nmb-193",
+		"title": "Analytics widget on the dashboard is stuck loading",
+		"description": "The analytics summary widget spins indefinitely while the rest of the dashboard renders fine.",
+		"reporter": "Skyler Ross",
+		"source": "slack",
+		"areas": [
+			"Dashboard"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-04-05T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155204.000000",
+				"reporter": "Skyler Ross",
+				"addedAt": "2026-04-05T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Dashboard widgets"
+		}
+	},
+	{
+		"_id": "nmb-192",
+		"title": "Dashboard fails to load widgets after a page refresh",
+		"description": "Refreshing the dashboard leaves every widget blank until a hard reload.",
+		"reporter": "Skyler Ross",
+		"source": "internal",
+		"areas": [
+			"Dashboard"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-03-04T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Dashboard widgets"
+		},
+		"responders": [
+			"Alex Rivera",
+			"Taylor Brooks"
+		]
+	},
+	{
+		"_id": "nmb-191",
+		"title": "Blank dashboard widgets on slower connections",
+		"description": "On slower networks the dashboard widgets render empty with no error message.",
+		"reporter": "Skyler Ross",
+		"source": "slack",
+		"areas": [
+			"Dashboard"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-02-03T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155205.000000",
+				"reporter": "Skyler Ross",
+				"addedAt": "2026-02-03T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Dashboard widgets"
+		}
+	},
+	{
+		"_id": "nmb-190",
+		"title": "Duplicate notification emails sent for a single comment",
+		"description": "A single new comment triggers two or three identical notification emails to every subscriber.",
+		"reporter": "Robin Shah",
+		"source": "slack",
+		"areas": [
+			"Notifications",
+			"Email Delivery"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-01-02T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155206.000000",
+				"reporter": "Robin Shah",
+				"addedAt": "2026-01-02T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Notifications"
+		}
+	},
+	{
+		"_id": "nmb-189",
+		"title": "Users receiving duplicate email notifications",
+		"description": "Customers report getting duplicate copies of the same email notification within seconds.",
+		"reporter": "Robin Shah",
+		"source": "internal",
+		"areas": [
+			"Notifications",
+			"Email Delivery"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Mobile",
+		"createdAt": "2026-05-01T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Notifications"
+		}
+	},
+	{
+		"_id": "nmb-188",
+		"title": "Notification emails arrive two or three times",
+		"description": "Notification emails for mentions are being delivered multiple times.",
+		"reporter": "Robin Shah",
+		"source": "slack",
+		"areas": [
+			"Notifications",
+			"Email Delivery"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Platform",
+		"createdAt": "2026-04-27T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155207.000000",
+				"reporter": "Robin Shah",
+				"addedAt": "2026-04-27T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Notifications"
+		},
+		"responders": [
+			"Quinn Murphy",
+			"Alex Rivera"
+		]
+	},
+	{
+		"_id": "nmb-187",
+		"title": "The same notification is delivered multiple times",
+		"description": "The same in-app and email notification fires repeatedly for one event.",
+		"reporter": "Robin Shah",
+		"source": "slack",
+		"areas": [
+			"Notifications",
+			"Email Delivery"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-03-26T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155208.000000",
+				"reporter": "Robin Shah",
+				"addedAt": "2026-03-26T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Notifications"
+		}
+	},
+	{
+		"_id": "nmb-186",
+		"title": "Large file upload fails at 100% with a timeout",
+		"description": "Uploads reach 100% and then fail with a timeout; the file never appears in the workspace.",
+		"reporter": "Casey Nguyen",
+		"source": "internal",
+		"areas": [
+			"File Upload"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-02-25T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "File upload"
+		}
+	},
+	{
+		"_id": "nmb-185",
+		"title": "Uploading files over 50MB fails silently",
+		"description": "Any attachment larger than about 50MB fails to upload with no error shown to the user.",
+		"reporter": "Casey Nguyen",
+		"source": "slack",
+		"areas": [
+			"File Upload"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-01-24T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "bug-reports",
+				"ts": "1778155209.000000",
+				"reporter": "Casey Nguyen",
+				"addedAt": "2026-01-24T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "File upload"
+		}
+	},
+	{
+		"_id": "nmb-184",
+		"title": "File upload times out for big attachments",
+		"description": "Large attachments time out during upload while small ones work fine.",
+		"reporter": "Casey Nguyen",
+		"source": "slack",
+		"areas": [
+			"File Upload"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-05-23T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "bug-reports",
+				"ts": "1778155210.000000",
+				"reporter": "Casey Nguyen",
+				"addedAt": "2026-05-23T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "File upload"
+		},
+		"responders": [
+			"Riley Adams",
+			"Quinn Murphy"
+		]
+	},
+	{
+		"_id": "nmb-183",
+		"title": "Search returns stale results after editing a document",
+		"description": "Editing a document does not update search — old titles and text keep matching.",
+		"reporter": "Jordan Lee",
+		"source": "internal",
+		"areas": [
+			"Search"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Mobile",
+		"createdAt": "2026-04-22T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Search freshness"
+		}
+	},
+	{
+		"_id": "nmb-182",
+		"title": "Search index not updating with new content",
+		"description": "Newly created content does not show up in search for several minutes.",
+		"reporter": "Jordan Lee",
+		"source": "slack",
+		"areas": [
+			"Search"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Platform",
+		"createdAt": "2026-03-21T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "mobile-feedback",
+				"ts": "1778155211.000000",
+				"reporter": "Jordan Lee",
+				"addedAt": "2026-03-21T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Search freshness"
+		}
+	},
+	{
+		"_id": "nmb-181",
+		"title": "Recently added items are missing from search results",
+		"description": "Items created in the last hour are missing from search results entirely.",
+		"reporter": "Jordan Lee",
+		"source": "slack",
+		"areas": [
+			"Search"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-02-20T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "mobile-feedback",
+				"ts": "1778155212.000000",
+				"reporter": "Jordan Lee",
+				"addedAt": "2026-02-20T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Search freshness"
+		}
+	},
+	{
+		"_id": "nmb-180",
+		"title": "Mobile app crashes on launch on Android 14",
+		"description": "The Nimbus mobile app crashes on startup for users on Android 14 before reaching the login screen.",
+		"reporter": "Alex Rivera",
+		"source": "internal",
+		"areas": [
+			"Mobile App",
+			"Performance"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-01-19T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Mobile crash"
+		},
+		"responders": [
+			"Jordan Lee",
+			"Riley Adams"
+		]
+	},
+	{
+		"_id": "nmb-179",
+		"title": "iOS app crashes immediately after the splash screen",
+		"description": "On iOS the app shows the splash screen and then crashes back to the home screen.",
+		"reporter": "Alex Rivera",
+		"source": "slack",
+		"areas": [
+			"Mobile App",
+			"Performance"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-05-18T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155213.000000",
+				"reporter": "Alex Rivera",
+				"addedAt": "2026-05-18T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Mobile crash"
+		}
+	},
+	{
+		"_id": "nmb-178",
+		"title": "App force-closes on open for some Android devices",
+		"description": "A subset of Android devices force-close the app right after opening it.",
+		"reporter": "Alex Rivera",
+		"source": "slack",
+		"areas": [
+			"Mobile App",
+			"Performance"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-04-17T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155214.000000",
+				"reporter": "Alex Rivera",
+				"addedAt": "2026-04-17T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Mobile crash"
+		}
+	},
+	{
+		"_id": "nmb-177",
+		"title": "Invoice shows the wrong subscription amount after a plan change",
+		"description": "After switching plans, the generated invoice reflects the previous plan price rather than the new one.",
+		"reporter": "Avery Collins",
+		"source": "internal",
+		"areas": [
+			"Billing / Subscriptions"
+		],
+		"severity": "high",
+		"status": "in-progress",
+		"assignee": "Backend",
+		"createdAt": "2026-03-16T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Billing"
+		},
+		"stage": "in-flight",
+		"reviewer": "Morgan Diaz",
+		"specMarkdown": "## Fix\nRecompute the invoice line items from the active subscription at charge time.",
+		"asanaTaskGid": "1200000000000001",
+		"asanaTaskUrl": "https://app.asana.com/0/PLACEHOLDER/1200000000000001",
+		"asanaPlaceholder": true,
+		"stageHistory": [
+			{
+				"from": "triage",
+				"to": "pm-review",
+				"by": "Morgan Diaz",
+				"at": "2026-05-10T10:00:00Z"
+			},
+			{
+				"from": "pm-review",
+				"to": "ready-for-eng",
+				"by": "Morgan Diaz",
+				"at": "2026-05-11T10:00:00Z"
+			},
+			{
+				"from": "ready-for-eng",
+				"to": "in-flight",
+				"by": "Backend",
+				"at": "2026-05-12T10:00:00Z"
+			}
+		]
+	},
+	{
+		"_id": "nmb-176",
+		"title": "Billing charges the old price after upgrading a plan",
+		"description": "Upgrading a subscription still bills the customer at the old, lower price.",
+		"reporter": "Avery Collins",
+		"source": "slack",
+		"areas": [
+			"Billing / Subscriptions"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Platform",
+		"createdAt": "2026-02-15T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "support-triage",
+				"ts": "1778155215.000000",
+				"reporter": "Avery Collins",
+				"addedAt": "2026-02-15T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Billing"
+		},
+		"responders": [
+			"Skyler Ross",
+			"Jordan Lee"
+		]
+	},
+	{
+		"_id": "nmb-175",
+		"title": "CSV export is truncated to 1000 rows",
+		"description": "Exporting a report to CSV silently stops at 1000 rows even when more data exists.",
+		"reporter": "Robin Shah",
+		"source": "slack",
+		"areas": [
+			"Export / Import",
+			"Reporting / Analytics"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-01-14T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155216.000000",
+				"reporter": "Robin Shah",
+				"addedAt": "2026-01-14T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Export"
+		}
+	},
+	{
+		"_id": "nmb-174",
+		"title": "Large report export cuts off data rows",
+		"description": "Large report exports are missing rows past a certain point with no warning.",
+		"reporter": "Robin Shah",
+		"source": "internal",
+		"areas": [
+			"Export / Import",
+			"Reporting / Analytics"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-05-13T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Export"
+		}
+	},
+	{
+		"_id": "nmb-173",
+		"title": "Editor cursor jumps to the top while typing",
+		"description": "While typing in a long document the cursor unexpectedly jumps back to the top of the page.",
+		"reporter": "Jamie Foster",
+		"source": "slack",
+		"areas": [
+			"Editor"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-04-12T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "mobile-feedback",
+				"ts": "1778155217.000000",
+				"reporter": "Jamie Foster",
+				"addedAt": "2026-04-12T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Editor"
+		}
+	},
+	{
+		"_id": "nmb-172",
+		"title": "Cursor position resets mid-edit in the editor",
+		"description": "The editor occasionally resets the cursor position, causing text to be inserted in the wrong place.",
+		"reporter": "Jamie Foster",
+		"source": "slack",
+		"areas": [
+			"Editor"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-03-11T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "mobile-feedback",
+				"ts": "1778155218.000000",
+				"reporter": "Jamie Foster",
+				"addedAt": "2026-03-11T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Editor"
+		},
+		"responders": [
+			"Robin Shah",
+			"Skyler Ross"
+		]
+	},
+	{
+		"_id": "nmb-171",
+		"title": "Webhooks intermittently fail to deliver",
+		"description": "Outbound webhooks drop intermittently and downstream integrations miss events.",
+		"reporter": "Casey Nguyen",
+		"source": "internal",
+		"areas": [
+			"API / Webhooks",
+			"Integrations"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Mobile",
+		"createdAt": "2026-02-10T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Webhooks"
+		}
+	},
+	{
+		"_id": "nmb-170",
+		"title": "API webhook retries are not firing on 500s",
+		"description": "When a webhook endpoint returns a 500, the retry logic never re-attempts delivery.",
+		"reporter": "Casey Nguyen",
+		"source": "slack",
+		"areas": [
+			"API / Webhooks",
+			"Integrations"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Platform",
+		"createdAt": "2026-01-09T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "bug-reports",
+				"ts": "1778155219.000000",
+				"reporter": "Casey Nguyen",
+				"addedAt": "2026-01-09T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Webhooks"
+		}
+	},
+	{
+		"_id": "nmb-169",
+		"title": "Onboarding checklist doesn't mark steps complete",
+		"description": "Completed onboarding steps stay unchecked, so new users think setup failed.",
+		"reporter": "Taylor Brooks",
+		"source": "slack",
+		"areas": [
+			"Onboarding"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-05-08T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155220.000000",
+				"reporter": "Taylor Brooks",
+				"addedAt": "2026-05-08T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Onboarding"
+		}
+	},
+	{
+		"_id": "nmb-168",
+		"title": "@mentions don't notify the mentioned user",
+		"description": "Typing @name in a comment does not send a notification to that person.",
+		"reporter": "Jordan Lee",
+		"source": "internal",
+		"areas": [
+			"Comments / Mentions"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-04-07T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Mentions"
+		},
+		"responders": [
+			"Casey Nguyen",
+			"Robin Shah"
+		]
+	},
+	{
+		"_id": "nmb-167",
+		"title": "Viewer role can still edit shared boards",
+		"description": "Users assigned the read-only Viewer role are able to edit shared boards, a permissions escalation.",
+		"reporter": "Sam Okafor",
+		"source": "slack",
+		"areas": [
+			"Permissions / Roles"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-03-06T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "support-triage",
+				"ts": "1778155221.000000",
+				"reporter": "Sam Okafor",
+				"addedAt": "2026-03-06T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Permissions"
+		}
+	},
+	{
+		"_id": "nmb-166",
+		"title": "Timezone setting doesn't persist after save",
+		"description": "Changing the account timezone reverts to the default after a page reload.",
+		"reporter": "Priya Sharma",
+		"source": "slack",
+		"areas": [
+			"Settings"
+		],
+		"severity": "low",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-02-05T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "bug-reports",
+				"ts": "1778155222.000000",
+				"reporter": "Priya Sharma",
+				"addedAt": "2026-02-05T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Settings"
+		},
+		"archived": true
+	},
+	{
+		"_id": "nmb-165",
+		"title": "Recurring events are created in the wrong timezone",
+		"description": "Recurring calendar events shift by several hours because they use UTC instead of the user timezone.",
+		"reporter": "Alex Rivera",
+		"source": "internal",
+		"areas": [
+			"Calendar / Scheduling"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Mobile",
+		"createdAt": "2026-01-04T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Calendar"
+		}
+	},
+	{
+		"_id": "nmb-164",
+		"title": "Third-party integration disconnects after 24 hours",
+		"description": "The connected integration silently disconnects roughly once a day and must be re-authorized.",
+		"reporter": "Skyler Ross",
+		"source": "slack",
+		"areas": [
+			"Integrations"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Platform",
+		"createdAt": "2026-05-03T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "eng-oncall",
+				"ts": "1778155223.000000",
+				"reporter": "Skyler Ross",
+				"addedAt": "2026-05-03T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Integrations"
+		},
+		"responders": [
+			"Sam Okafor",
+			"Casey Nguyen"
+		]
+	},
+	{
+		"_id": "nmb-163",
+		"title": "Preview deployments fail on forked pull requests",
+		"description": "CI preview builds fail for PRs opened from forks due to missing environment access.",
+		"reporter": "Drew Bennett",
+		"source": "slack",
+		"areas": [
+			"Deployment / CI"
+		],
+		"severity": "low",
+		"status": "open",
+		"assignee": "Backend",
+		"createdAt": "2026-04-02T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "mobile-feedback",
+				"ts": "1778155224.000000",
+				"reporter": "Drew Bennett",
+				"addedAt": "2026-04-02T12:00:00Z"
+			}
+		],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Deployment"
+		}
+	},
+	{
+		"_id": "nmb-162",
+		"title": "Dashboard API p95 latency spiked to 4s",
+		"description": "The dashboard data API p95 latency jumped to around 4 seconds after the last release.",
+		"reporter": "Avery Collins",
+		"source": "internal",
+		"areas": [
+			"Performance"
+		],
+		"severity": "high",
+		"status": "open",
+		"assignee": "Frontend",
+		"createdAt": "2026-03-01T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "bug",
+		"meta": {
+			"rawCategory": "Performance"
+		}
+	},
+	{
+		"_id": "nmb-161",
+		"title": "Add week-over-week comparison to reports",
+		"description": "Users want a week-over-week delta column in reports to spot trends at a glance.",
+		"reporter": "Quinn Murphy",
+		"source": "slack",
+		"areas": [
+			"Reporting / Analytics"
+		],
+		"severity": "medium",
+		"status": "open",
+		"assignee": "Infra",
+		"createdAt": "2026-02-27T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "bug-reports",
+				"ts": "1778155225.000000",
+				"reporter": "Quinn Murphy",
+				"addedAt": "2026-02-27T12:00:00Z"
+			}
+		],
+		"intakeType": "feature",
+		"meta": {
+			"rawCategory": "Reporting"
+		}
+	},
+	{
+		"_id": "nmb-160",
+		"title": "Support pagination cursors in the public API",
+		"description": "Offset pagination is slow for large datasets; add cursor-based pagination to the public API.",
+		"reporter": "Robin Shah",
+		"source": "slack",
+		"areas": [
+			"API / Webhooks"
+		],
+		"severity": "low",
+		"status": "open",
+		"assignee": "Growth",
+		"createdAt": "2026-01-26T12:00:00Z",
+		"slackThreads": [
+			{
+				"channel": "product-feedback",
+				"ts": "1778155226.000000",
+				"reporter": "Robin Shah",
+				"addedAt": "2026-01-26T12:00:00Z"
+			}
+		],
+		"intakeType": "feature",
+		"meta": {
+			"rawCategory": "API"
+		},
+		"responders": [
+			"Drew Bennett",
+			"Sam Okafor"
+		]
+	},
+	{
+		"_id": "nmb-159",
+		"title": "How do I filter search results by date range?",
+		"description": "A customer is asking whether search supports filtering by a custom date range.",
+		"reporter": "Devon Park",
+		"source": "internal",
+		"areas": [
+			"Search"
+		],
+		"severity": "low",
+		"status": "open",
+		"assignee": "Mobile",
+		"createdAt": "2026-05-25T12:00:00Z",
+		"slackThreads": [],
+		"intakeType": "question",
+		"meta": {
+			"rawCategory": "Search"
+		}
+	}
+]

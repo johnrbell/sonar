@@ -1,0 +1,31 @@
+{
+  "name": "sonar",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sonar — a bug & feedback radar with AI-assisted clustering and a ticket-resolver workflow. Standalone, password-protected, runs on synthetic data.",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-vercel": "^6.3.3",
+    "@sveltejs/kit": "^2.55.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/d3": "^7.4.3",
+    "@types/node": "^22.10.0",
+    "postcss": "^8.5.0",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.4.5",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.7.0",
+    "vite": "^6.4.2"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "zod": "^4.3.6"
+  }
+}
