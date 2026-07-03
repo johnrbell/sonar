@@ -4,7 +4,7 @@ import { requireAuth } from '$lib/server/auth';
 import { DedupeRequestSchema, type DedupeMatch, type Bug } from '$lib/schemas';
 import { vectorizeQuery, similarityScore } from '$lib/cluster';
 import { DEFAULT_DEDUPE_THRESHOLD } from '$lib/constants';
-import { getMockBugs, getRuntimeBugs } from '$lib/mocks';
+import { getAllBugs } from '$lib/mocks';
 
 /**
  * POST /api/dedupe — "is this new?" Takes raw text (or a structured
@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ matches: [], threshold, mode: 'empty-query' as const });
 	}
 
-	let corpus: Bug[] = [...getRuntimeBugs(), ...getMockBugs()];
+	let corpus: Bug[] = await getAllBugs();
 
 	// Archived bugs should never absorb new reports — filter them out.
 	corpus = corpus.filter((b) => b.archived !== true);

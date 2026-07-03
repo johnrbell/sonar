@@ -59,6 +59,20 @@ export const SlackThreadSchema = z.object({
 });
 export type SlackThread = z.infer<typeof SlackThreadSchema>;
 
+// A file shared on the originating Slack message. Slack file URLs
+// (`urlPrivate`) require the bot token to download, so the UI never links to
+// them directly — it points at the authenticated proxy route
+// (/api/slack/file?id=...), which streams the bytes with the bot token.
+export const SlackAttachmentSchema = z.object({
+	id: z.string(),
+	name: z.string().optional(),
+	mimetype: z.string().optional(),
+	urlPrivate: z.string().optional(),
+	permalink: z.string().optional(),
+	isImage: z.boolean().optional()
+});
+export type SlackAttachment = z.infer<typeof SlackAttachmentSchema>;
+
 // Public intake shape — what the in-app "Log a bug" modal POSTs.
 export const BugIntakeSchema = z.object({
 	title: z.string().min(3).max(200),
@@ -106,6 +120,9 @@ export const BugSchema = z.object({
 	// thread (if any) and grows via POST /api/bugs/[id]/sources when
 	// /api/dedupe routes a new thread to an existing bug.
 	slackThreads: z.array(SlackThreadSchema).optional().default([]),
+	// Files shared on the originating Slack message(s) — screenshots, logs, etc.
+	// Populated by the Slack events handler; rendered as chips in the panel.
+	attachments: z.array(SlackAttachmentSchema).optional(),
 	asanaTaskGid: z.string().optional(),
 	asanaTaskUrl: z.string().optional(),
 	asanaPlaceholder: z.boolean().optional(),

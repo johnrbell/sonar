@@ -21,29 +21,41 @@ It's a demo/prototype — everything resets when the process restarts.
 
 ## Data & persistence
 
-There is **no database**. On boot the app seeds an in-memory store from
-[`seed-bugs.json`](./seed-bugs.json) — ~40 fictional bugs for a made-up SaaS app
-("Nimbus"). Writes (new bugs, edits, archives, stage transitions) live in process
-memory for the session and reset on restart.
+Bugs are persisted in **Vercel Postgres**. Each bug is stored as a single JSONB
+document keyed by `_id`. On first access the store creates the table and, if
+empty, seeds it from [`seed-bugs.json`](./seed-bugs.json) — ~40 fictional bugs
+for a made-up SaaS app ("Nimbus").
 
-The store lives in [`mocks.ts`](./mocks.ts): `getMockBugs`, `getRuntimeBugs`,
-`addRuntimeBug`, `updateMockBug`, `findMockBug`, `deleteMockBug`.
+The store lives in [`mocks.ts`](./mocks.ts) (all async): `getAllBugs`,
+`findMockBug`, `insertBug`, `updateMockBug`, `deleteMockBug`, plus
+`seedDatabase()` used by the `pnpm db:seed` script
+([`server/db/seed.ts`](./server/db/seed.ts)).
 
-To regenerate or edit the seed set, just edit `seed-bugs.json` directly (it's a
-plain array of `Bug` objects — see the `BugSchema` in [`schemas.ts`](./schemas.ts)).
+Locally, run `vercel env pull .env.development.local` to fetch `POSTGRES_URL`,
+then `pnpm db:seed` (add `-- --force` to reset to the clean seed data).
 
-## Integrations (all cosmetic)
+To regenerate or edit the seed set, edit `seed-bugs.json` directly (it's a plain
+array of `Bug` objects — see the `BugSchema` in [`schemas.ts`](./schemas.ts)).
 
-The UI keeps **Slack** and **Asana**-flavored wording, but nothing calls out to
-any real service:
+## Integrations
 
-- **Slack threads** are just provenance metadata stored on a bug
-  (`slackThreads[]`). No Slack app, no tokens, no live search.
+**Slack** is a live integration; **Asana** is still a self-contained placeholder.
+
+- **Slack** — a real bot (see [`server/slack.ts`](./server/slack.ts)):
+  - Inbound: messages in channels the bot is in hit
+    [`/api/slack/events`](../routes/api/slack/events/+server.ts) (a public,
+    signing-secret-verified webhook). Each message is deduped against existing
+    bugs and either appended to a match or filed as a new `source: 'slack'` bug,
+    capturing file attachments.
+  - Outbound: the resolver's `in-flight → done` transition posts a resolution
+    follow-up back to every originating thread via `chat.postMessage`.
+  - File attachments are streamed through the authenticated
+    [`/api/slack/file`](../routes/api/slack/file/+server.ts) proxy so private
+    Slack files render in the UI without exposing the bot token.
+  - Requires `SLACK_BOT_TOKEN` + `SLACK_SIGNING_SECRET` in the environment.
 - **Asana tasks** are placeholders: the "Create task" actions stamp a synthetic
   `gid` + URL onto the bug via [`asana-stamp.ts`](./asana-stamp.ts) so the
   workflow can be exercised end-to-end. See [`/api/asana`](../routes/api/asana/+server.ts).
-- The resolver's `in-flight → done` "resolved followup" is reported as a local
-  no-op — there is no outbound post.
 
 ## Auth
 
@@ -67,7 +79,8 @@ clustering on any error. See [`cluster.ts`](./cluster.ts).
 
 ## API routes
 
-All routes are under `/api` and require the session cookie.
+Routes are under `/api` and require the session cookie, **except**
+`/api/slack/events` (public; Slack signature-verified).
 
 | Route | Method | Purpose |
 | --- | --- | --- |
@@ -76,10 +89,12 @@ All routes are under `/api` and require the session cookie.
 | `/api/cluster` | GET | Clusters + bugs + archived bugs. `?threshold=` and `?ai=true`. |
 | `/api/bugs` | GET / POST | List bugs / file a new bug (validated with zod). |
 | `/api/bugs/[id]` | GET / PATCH / DELETE | Read / partial-update / delete (delete needs `?confirm=true`). |
-| `/api/bugs/[id]/advance` | POST | Resolver stage transition with gate checks + audit log. |
+| `/api/bugs/[id]/advance` | POST | Resolver stage transition with gate checks + audit log + Slack follow-up. |
 | `/api/bugs/[id]/sources` | POST | Append a Slack-thread source to an existing bug. |
 | `/api/dedupe` | POST | Ranked similarity matches against existing bugs. |
 | `/api/asana` | POST | Placeholder task-tracker writeback (stamps a synthetic gid/URL). |
+| `/api/slack/events` | POST | **Public.** Slack Events webhook — ingests messages as bugs. |
+| `/api/slack/file` | GET | Authenticated proxy that streams a private Slack file attachment. |
 
 ## Layout
 
@@ -89,10 +104,12 @@ src/
   app.css / app.html         — Tailwind + fonts, no external auth script
   lib/
     server/auth.ts           — shared-password check + session cookie helpers
+    server/slack.ts          — Slack Web API client + signature verification
+    server/db/seed.ts        — `pnpm db:seed` script (seed/reset Postgres)
     schemas.ts               — zod schemas + types (Bug, Cluster, dedupe, etc.)
     constants.ts             — FEATURE_AREAS + normalization helpers
     seed-bugs.json           — synthetic seed data
-    mocks.ts                 — in-memory store
+    mocks.ts                 — Postgres-backed data store (async)
     cluster.ts / cluster-text.ts — clustering (local + optional AI)
     cluster-views.ts         — cluster-view derivations
     asana-stamp.ts           — placeholder task stamping

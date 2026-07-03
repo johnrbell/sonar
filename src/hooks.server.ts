@@ -13,7 +13,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const path = event.url.pathname;
 	const isProtectedPage = path === '/' || path.startsWith('/resolver');
-	const isProtectedApi = path.startsWith('/api/') && path !== '/api/login';
+	// Public APIs: the login endpoint and the Slack Events webhook. Slack calls
+	// the events endpoint with no session cookie — it's secured by signing-secret
+	// verification instead (see /api/slack/events). The Slack file proxy
+	// (/api/slack/file) stays behind the gate so only signed-in users see files.
+	const isPublicApi = path === '/api/login' || path === '/api/slack/events';
+	const isProtectedApi = path.startsWith('/api/') && !isPublicApi;
 
 	if (!authed && (isProtectedPage || isProtectedApi)) {
 		if (isProtectedApi) {

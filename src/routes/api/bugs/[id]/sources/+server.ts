@@ -26,9 +26,9 @@ export const POST: RequestHandler = async ({ request, params }) => {
 		addedAt: parsed.data.slackThread.addedAt ?? new Date().toISOString()
 	};
 
-	const existing = findMockBug(id);
+	const existing = await findMockBug(id);
 	if (!existing) return json({ error: 'Bug not found' }, { status: 404 });
 	const threads = [...(existing.slackThreads ?? []), newThread];
-	const updated = updateMockBug(id, { slackThreads: threads });
+	const updated = await updateMockBug(id, { slackThreads: threads });
 	return json({ ok: true, bug: updated });
 };

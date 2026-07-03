@@ -474,6 +474,27 @@
 						</div>
 					{/if}
 
+					{#if b.attachments && b.attachments.length > 0}
+						<div class="flex flex-wrap gap-1 mb-2">
+							{#each b.attachments as att, i (att.id + i)}
+								{@const fhref = att.urlPrivate
+									? `/api/slack/file?url=${encodeURIComponent(att.urlPrivate)}`
+									: (att.permalink ?? '#')}
+								<a
+									href={fhref}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-xs px-2 py-0.5 rounded border inline-flex items-center gap-1 hover:opacity-80"
+									style="color: var(--sonar-slack-fg); border-color: var(--sonar-slack-border); background: var(--sonar-slack-bg);"
+									title={att.name ?? 'Slack attachment'}
+								>
+									<span style="font-weight: 700;">{att.isImage ? 'IMG' : 'FILE'}</span>
+									<span class="opacity-80">{att.name ?? 'attachment'}</span>
+								</a>
+							{/each}
+						</div>
+					{/if}
+
 					<div class="flex justify-between items-center text-xs sonar-muted gap-2 flex-wrap">
 						<span title={SLACK_USER_ID_RE.test(b.reporter) ? `Raw Slack id: ${b.reporter}` : undefined}>{displayReporter(b.reporter)} · {formatDate(b.createdAt)}{b.source === 'public' ? ' · public' : ''}{b.source === 'slack' ? ' · slack' : ''}</span>
 						<div class="flex items-center gap-1.5">

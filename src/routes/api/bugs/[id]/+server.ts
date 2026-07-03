@@ -9,7 +9,7 @@ export const GET: RequestHandler = async ({ request, params }) => {
 	await requireAuth(request);
 	const id = params.id;
 	if (!id) return json({ error: 'Missing bug id' }, { status: 400 });
-	const hit = findMockBug(id);
+	const hit = await findMockBug(id);
 	if (!hit) return json({ error: 'Bug not found' }, { status: 404 });
 	return json({ bug: hit });
 };
@@ -44,7 +44,7 @@ export const PATCH: RequestHandler = async ({ request, params }) => {
 	if (specMarkdown !== undefined) update.specMarkdown = specMarkdown;
 	if (archived !== undefined) update.archived = archived;
 
-	const existing = findMockBug(id);
+	const existing = await findMockBug(id);
 	if (!existing) return json({ error: 'Bug not found' }, { status: 404 });
 	const finalUpdate: Partial<Bug> = { ...update };
 	if (meta !== undefined) {
@@ -52,7 +52,7 @@ export const PATCH: RequestHandler = async ({ request, params }) => {
 		// clobbering the rest.
 		finalUpdate.meta = { ...(existing.meta ?? {}), ...meta };
 	}
-	const updated = updateMockBug(id, finalUpdate);
+	const updated = await updateMockBug(id, finalUpdate);
 	return json({ ok: true, bug: updated });
 };
 
@@ -70,7 +70,7 @@ export const DELETE: RequestHandler = async ({ request, params, url }) => {
 		return json({ error: 'Refusing destructive delete without ?confirm=true' }, { status: 400 });
 	}
 
-	const ok = deleteMockBug(id);
+	const ok = await deleteMockBug(id);
 	if (!ok) return json({ error: 'Bug not found' }, { status: 404 });
 	return json({ ok: true });
 };

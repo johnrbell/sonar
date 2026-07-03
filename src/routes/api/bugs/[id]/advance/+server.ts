@@ -10,6 +10,7 @@ import {
 import { findMockBug, updateMockBug } from '$lib/mocks';
 import { canTransition, defaultStageFor, stageStatusFor } from '$lib/stages';
 import { makeAsanaStampFor } from '$lib/asana-stamp';
+import { postMessage, joinConversation, isSlackConfigured } from '$lib/server/slack';
 
 /**
  * POST /api/bugs/[id]/advance — transition a bug through the Ticket Resolver
@@ -36,7 +37,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	}
 	const { to, by, note } = parsed.data;
 
-	const existing = findMockBug(id);
+	const existing = await findMockBug(id);
 	if (!existing) return json({ error: 'Bug not found' }, { status: 404 });
 
 	// Questions don't enter the resolver.
@@ -88,23 +89,32 @@ export const POST: RequestHandler = async ({ request, params }) => {
 		}
 	}
 
-	// in-flight → done : close the placeholder task. The originating-thread
-	// followup is a no-op in this build (no live Slack integration); we report
-	// it as skipped so the UI summary stays informative.
+	// in-flight → done : close the placeholder task and post a resolution
+	// follow-up back to every originating Slack thread.
 	if (from === 'in-flight' && to === 'done') {
 		if (!existing.asanaClosedAt) {
 			sideEffectUpdates.asanaClosedAt = new Date().toISOString();
-			const threadCount = existing.slackThreads?.length ?? 0;
-			sideEffectReport.slackFollowup =
-				threadCount > 0
-					? { skipped: 'no-live-slack-integration' }
-					: { threadsAttempted: 0, threadsPosted: 0 };
+			const threads = existing.slackThreads ?? [];
+			if (threads.length === 0) {
+				sideEffectReport.slackFollowup = { threadsAttempted: 0, threadsPosted: 0 };
+			} else if (!isSlackConfigured()) {
+				sideEffectReport.slackFollowup = { skipped: 'slack-not-configured' };
+			} else {
+				let posted = 0;
+				for (const t of threads) {
+					if (await postResolutionFollowup(t.channel, t.ts, existing.title)) posted++;
+				}
+				sideEffectReport.slackFollowup = {
+					threadsAttempted: threads.length,
+					threadsPosted: posted
+				};
+			}
 		} else {
 			sideEffectReport.slackFollowup = { skipped: 'already-resolved' };
 		}
 	}
 
-	const updated = applyAdvanceWrite(id, { to, historyEntry, sideEffectUpdates });
+	const updated = await applyAdvanceWrite(id, { to, historyEntry, sideEffectUpdates });
 	if (!updated) {
 		return json({ error: 'Bug vanished mid-write' }, { status: 404 });
 	}
@@ -135,9 +145,27 @@ interface WriteArgs {
 	sideEffectUpdates: Partial<Bug>;
 }
 
-function applyAdvanceWrite(id: string, args: WriteArgs): Bug | null {
+/**
+ * Post a resolution follow-up to a Slack thread. If the bot isn't in the
+ * channel yet, it joins and retries once. Returns whether the message posted.
+ */
+async function postResolutionFollowup(
+	channel: string,
+	ts: string,
+	title: string
+): Promise<boolean> {
+	const text = `:white_check_mark: This has been resolved in Sonar: *${title}*.`;
+	let res = await postMessage({ channel, thread_ts: ts, text });
+	if (!res.ok && res.error === 'not_in_channel') {
+		await joinConversation(channel);
+		res = await postMessage({ channel, thread_ts: ts, text });
+	}
+	return res.ok;
+}
+
+async function applyAdvanceWrite(id: string, args: WriteArgs): Promise<Bug | null> {
 	const newStatus = stageStatusFor(args.to);
-	const existing = findMockBug(id);
+	const existing = await findMockBug(id);
 	if (!existing) return null;
 	const nextHistory = [...(existing.stageHistory ?? []), args.historyEntry];
 	return updateMockBug(id, {

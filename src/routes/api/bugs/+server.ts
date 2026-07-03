@@ -2,12 +2,12 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth';
 import { BugIntakeSchema, type Bug } from '$lib/schemas';
-import { getMockBugs, getRuntimeBugs, addRuntimeBug } from '$lib/mocks';
+import { getAllBugs, insertBug } from '$lib/mocks';
 
 // GET /api/bugs — list bugs (newest first).
 export const GET: RequestHandler = async ({ request }) => {
 	await requireAuth(request);
-	return json({ bugs: [...getRuntimeBugs(), ...getMockBugs()] });
+	return json({ bugs: await getAllBugs() });
 };
 
 // POST /api/bugs — file a new bug/feature/question. Validated with zod.
@@ -41,6 +41,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		slackThreads: initialThreads,
 		meta: intake.meta
 	};
-	addRuntimeBug(bug);
+	await insertBug(bug);
 	return json({ ok: true, bug });
 };

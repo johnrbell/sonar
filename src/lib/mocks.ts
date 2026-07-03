@@ -1,74 +1,136 @@
-// In-memory data store. This standalone build has no database — the app boots
-// from a synthetic seed JSON and keeps all writes in process memory. Everything
-// resets on restart, which is exactly the intended behavior for a demo.
+// Data store. Originally an in-memory store seeded from a synthetic JSON file;
+// now backed by Vercel Postgres so writes survive across serverless
+// invocations (required for the Slack integration, whose events land in a
+// different function instance than the web UI reads from).
+//
+// Each bug is stored as a single JSONB document keyed by its `_id`. The seed
+// JSON is loaded once on first access if the table is empty. The public API is
+// intentionally the same shape the rest of the app already imported, only now
+// async.
+import { createPool, type VercelPool } from '@vercel/postgres';
 import type { Bug } from './schemas';
 import { normalizeBugAreas } from './constants';
 import seedBugs from './seed-bugs.json';
 
-// Bugs created via the form/API land here so the cluster view updates live.
-let runtimeBugs: Bug[] = [];
-// Soft-delete set for seed bugs. The seed JSON is an import — we can't mutate
-// it — so deletes against seed ids just mark them excluded. Lives for the
-// process lifetime (resets on restart).
-const tombstones = new Set<string>();
-export function getRuntimeBugs(): Bug[] {
-	return runtimeBugs.map(normalizeBugAreas);
-}
-export function addRuntimeBug(b: Bug): void {
-	runtimeBugs.unshift(b);
-}
-export function resetRuntimeBugs(): void {
-	runtimeBugs = [];
-	tombstones.clear();
-}
-export function deleteMockBug(id: string): boolean {
-	const rtIdx = runtimeBugs.findIndex((b) => b._id === id);
-	if (rtIdx >= 0) {
-		runtimeBugs.splice(rtIdx, 1);
-		return true;
+type BugRow = { doc: Bug };
+
+// Lazily-created connection pool. We read the connection string explicitly (with
+// fallbacks) rather than relying on @vercel/postgres's default POSTGRES_URL
+// lookup: Vercel Postgres is now backed by Neon, whose integration may expose
+// the string as DATABASE_URL. Reading process.env directly (instead of
+// SvelteKit's $env) also lets the standalone `db:seed` tsx script reuse this
+// module.
+let _pool: VercelPool | null = null;
+
+function pool(): VercelPool {
+	if (!_pool) {
+		const connectionString =
+			process.env.POSTGRES_URL ||
+			process.env.DATABASE_URL ||
+			process.env.POSTGRES_PRISMA_URL ||
+			process.env.POSTGRES_URL_NON_POOLING;
+		_pool = createPool(connectionString ? { connectionString } : undefined);
 	}
-	const seed = (seedBugs as Bug[]).find((b) => b._id === id);
-	if (!seed) return false;
-	tombstones.add(id);
-	return true;
+	return _pool;
 }
 
-// Update — clones a seed bug into the runtime store on first touch so
-// subsequent reads (which concat runtime + seed) reflect the change. Returns
-// the updated bug, or null if the id doesn't exist.
-export function updateMockBug(id: string, patch: Partial<Bug>): Bug | null {
-	const rt = runtimeBugs.findIndex((b) => b._id === id);
-	if (rt >= 0) {
-		runtimeBugs[rt] = { ...runtimeBugs[rt], ...patch };
-		return runtimeBugs[rt];
+// One-time (per process) schema + seed guard. Every query awaits this so the
+// table exists before the first read/write. `CREATE TABLE IF NOT EXISTS` is
+// idempotent, and seeding uses ON CONFLICT DO NOTHING so concurrent cold
+// starts can't produce duplicates.
+let readyPromise: Promise<void> | null = null;
+
+function ensureReady(): Promise<void> {
+	if (!readyPromise) {
+		readyPromise = init().catch((err) => {
+			// Reset so a transient failure (e.g. DB waking up) can retry on the
+			// next call instead of caching a rejected promise forever.
+			readyPromise = null;
+			throw err;
+		});
 	}
-	const seed = (seedBugs as Bug[]).find((b) => b._id === id);
-	if (!seed) return null;
-	const cloned: Bug = { ...seed, ...patch };
-	runtimeBugs.unshift(cloned);
-	return cloned;
+	return readyPromise;
 }
 
-export function findMockBug(id: string): Bug | null {
-	if (tombstones.has(id)) return null;
-	const hit =
-		runtimeBugs.find((b) => b._id === id) ??
-		((seedBugs as Bug[]).find((b) => b._id === id) ?? null);
-	return hit ? normalizeBugAreas(hit) : null;
+async function init(): Promise<void> {
+	await pool().sql`
+		CREATE TABLE IF NOT EXISTS bugs (
+			id TEXT PRIMARY KEY,
+			doc JSONB NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		)
+	`;
+	const { rows } = await pool().sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM bugs`;
+	if (rows[0]?.n === 0) {
+		await insertSeed();
+	}
 }
 
-// ~40 synthetic seed bugs for a fictional SaaS app ("Nimbus"), spread across
-// the feature areas in constants.ts with a handful of intentional natural
-// clusters (SSO redirect loops, dashboard widgets stuck loading, duplicate
-// notification emails, large-file upload timeouts, etc.). The rest are
-// singletons. Data lives in ./seed-bugs.json so it's easy to edit/regenerate.
-export function getMockBugs(): Bug[] {
-	// Filter out tombstoned seeds AND any seed whose id has been cloned
-	// into runtimeBugs by a prior updateMockBug() — otherwise the cluster
-	// endpoint sees both the stale seed AND the updated runtime copy, and
-	// the same bug shows up twice (e.g. once in clusters, once in archive).
-	const runtimeIds = new Set(runtimeBugs.map((b) => b._id));
-	return (seedBugs as Bug[])
-		.filter((b) => !tombstones.has(b._id) && !runtimeIds.has(b._id))
-		.map(normalizeBugAreas);
+async function insertSeed(): Promise<void> {
+	for (const bug of seedBugs as Bug[]) {
+		await pool().sql`
+			INSERT INTO bugs (id, doc, created_at)
+			VALUES (${bug._id}, ${JSON.stringify(bug)}::jsonb, ${bug.createdAt})
+			ON CONFLICT (id) DO NOTHING
+		`;
+	}
+}
+
+/**
+ * Re-seed the database. Used by the `db:seed` script. When `force` is true the
+ * table is truncated first (a clean reset to the synthetic starting data).
+ */
+export async function seedDatabase(force = false): Promise<number> {
+	await ensureReady();
+	if (force) {
+		await pool().sql`TRUNCATE TABLE bugs`;
+	}
+	await insertSeed();
+	const { rows } = await pool().sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM bugs`;
+	return rows[0]?.n ?? 0;
+}
+
+/** All bugs, newest first, areas normalized. */
+export async function getAllBugs(): Promise<Bug[]> {
+	await ensureReady();
+	const { rows } = await pool().sql<BugRow>`SELECT doc FROM bugs ORDER BY created_at DESC`;
+	return rows.map((r) => normalizeBugAreas(r.doc));
+}
+
+export async function findMockBug(id: string): Promise<Bug | null> {
+	await ensureReady();
+	const { rows } = await pool().sql<BugRow>`SELECT doc FROM bugs WHERE id = ${id}`;
+	const doc = rows[0]?.doc;
+	return doc ? normalizeBugAreas(doc) : null;
+}
+
+/** Insert a brand-new bug. */
+export async function insertBug(bug: Bug): Promise<Bug> {
+	await ensureReady();
+	await pool().sql`
+		INSERT INTO bugs (id, doc, created_at)
+		VALUES (${bug._id}, ${JSON.stringify(bug)}::jsonb, ${bug.createdAt})
+		ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc
+	`;
+	return normalizeBugAreas(bug);
+}
+
+/**
+ * Shallow-merge `patch` into an existing bug's document. Returns the updated
+ * bug, or null if the id doesn't exist.
+ */
+export async function updateMockBug(id: string, patch: Partial<Bug>): Promise<Bug | null> {
+	await ensureReady();
+	const { rows } = await pool().sql<BugRow>`SELECT doc FROM bugs WHERE id = ${id}`;
+	const existing = rows[0]?.doc;
+	if (!existing) return null;
+	const merged: Bug = { ...existing, ...patch };
+	await pool().sql`UPDATE bugs SET doc = ${JSON.stringify(merged)}::jsonb WHERE id = ${id}`;
+	return normalizeBugAreas(merged);
+}
+
+export async function deleteMockBug(id: string): Promise<boolean> {
+	await ensureReady();
+	const { rowCount } = await pool().sql`DELETE FROM bugs WHERE id = ${id}`;
+	return (rowCount ?? 0) > 0;
 }

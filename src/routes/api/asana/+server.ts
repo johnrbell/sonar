@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth';
 import { AsanaWriteRequestSchema } from '$lib/schemas';
-import { updateMockBug, findMockBug, getMockBugs, getRuntimeBugs } from '$lib/mocks';
+import { updateMockBug, findMockBug, getAllBugs } from '$lib/mocks';
 import { makeAsanaStampFor, buildAsanaTaskDescription } from '$lib/asana-stamp';
 
 /**
@@ -35,7 +35,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Provide bugId.' }, { status: 400 });
 	}
 
-	const existing = findMockBug(bugId);
+	const existing = await findMockBug(bugId);
 	if (!existing) return json({ error: 'Bug not found' }, { status: 404 });
 	if (existing.asanaTaskGid) {
 		// Already stamped — return existing without re-minting so the gid stays
@@ -46,11 +46,11 @@ export const POST: RequestHandler = async ({ request }) => {
 			placeholder: Boolean(existing.asanaPlaceholder),
 			reused: true,
 			taskDescription: buildAsanaTaskDescription(existing),
-			corpusSize: getRuntimeBugs().length + getMockBugs().length
+			corpusSize: (await getAllBugs()).length
 		});
 	}
 	const stamp = makeAsanaStampFor(existing);
-	const updated = updateMockBug(bugId, {
+	const updated = await updateMockBug(bugId, {
 		asanaTaskGid: stamp.asanaTaskGid,
 		asanaTaskUrl: stamp.asanaTaskUrl,
 		asanaPlaceholder: stamp.asanaPlaceholder
@@ -60,6 +60,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		stamped: updated ? [updated] : [],
 		placeholder: true,
 		taskDescription: updated ? buildAsanaTaskDescription(updated) : undefined,
-		corpusSize: getRuntimeBugs().length + getMockBugs().length
+		corpusSize: (await getAllBugs()).length
 	});
 };

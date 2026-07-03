@@ -1,0 +1,14 @@
+# pnpm 11 build-script approval. pnpm blocks dependency build scripts by default
+# and, in CI (e.g. Vercel), treats un-approved builds as a FATAL error. pnpm 11
+# replaced `onlyBuiltDependencies` with this `allowBuilds` map ({name: true|false}).
+#   esbuild: true    -> run its script so the platform binary is linked
+#   bufferutil: false -> explicitly decline (optional native dep of `ws`; the JS
+#                        fallback is fine, and forcing a node-gyp build is risky)
+allowBuilds:
+  esbuild: true
+  bufferutil: false
+
+# pnpm 11 auto-runs `install` before every `pnpm run` and exits non-zero while a
+# build script is pending; disable that pre-run check so `pnpm dev`/`build`/
+# `db:seed` work locally.
+verifyDepsBeforeRun: false
