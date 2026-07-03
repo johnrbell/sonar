@@ -5,8 +5,7 @@ import {
 	usersInfo,
 	getPermalink,
 	postMessage,
-	getBotUserId,
-	addReaction
+	getBotUserId
 } from '$lib/server/slack';
 import { getAllBugs, insertBug, updateMockBug } from '$lib/mocks';
 import { vectorizeQuery, similarityScore } from '$lib/cluster';
@@ -30,9 +29,8 @@ import type { Bug, SlackThread, SlackAttachment } from '$lib/schemas';
  *         a question ticket so the team can track the answer.
  *       · otherwise (bug/feature) → dedupe against existing bugs, then append
  *         the thread to the matched bug or file a new one (capturing file
- *         attachments), and reply prompting the reporter for more detail.
- *   - a reply inside a thread Sonar is already tracking → captured as extra
- *     context and appended to that ticket (no @-mention required).
+ *         attachments), and post an "Add details" button that opens a modal
+ *         (handled by /api/slack/interactions) for structured follow-up.
  */
 export const POST: RequestHandler = async ({ request }) => {
 	// The raw body is required for signature verification — read it once.
@@ -80,14 +78,6 @@ async function handleEvent(event: SlackMessageEvent): Promise<void> {
 	if (event.bot_id) return;
 	if (event.subtype && event.subtype !== 'file_share') return;
 	if (!event.user || !event.channel || !event.ts) return;
-
-	// A reply inside an existing thread: if it's a thread Sonar already tracks,
-	// treat it as the reporter answering our "tell us more" prompt and attach
-	// it to that ticket. No @-mention required for follow-ups.
-	if (event.thread_ts && event.thread_ts !== event.ts) {
-		await handleThreadReply(event);
-		return;
-	}
 
 	// Sonar only files a ticket when it is explicitly @-mentioned — it never
 	// files every channel message. Require the bot's own mention token.
@@ -173,17 +163,29 @@ async function handleEvent(event: SlackMessageEvent): Promise<void> {
 	};
 	await insertBug(bug);
 
+	const ackText = `:satellite_antenna: Logged to Sonar as a new ticket: *${title}*.`;
 	await postMessage({
 		channel: event.channel,
 		thread_ts: event.ts,
-		text:
-			`:satellite_antenna: Logged to Sonar as a new ticket: *${title}*.\n\n` +
-			`To help us triage, reply in this thread with any details you have:\n` +
-			`• *Steps to reproduce*\n` +
-			`• *What you expected* vs. *what actually happened*\n` +
-			`• *Affected area / feature*\n` +
-			`• *Severity* (low / medium / high)\n\n` +
-			`I'll attach your replies to this ticket automatically.`
+		text: ackText,
+		blocks: [
+			{
+				type: 'section',
+				text: { type: 'mrkdwn', text: ackText }
+			},
+			{
+				type: 'actions',
+				elements: [
+					{
+						type: 'button',
+						text: { type: 'plain_text', text: 'Add details', emoji: true },
+						style: 'primary',
+						action_id: 'sonar_add_details',
+						value: bug._id
+					}
+				]
+			}
+		]
 	});
 }
 
@@ -269,67 +271,6 @@ function renderSource(s: SourceResult): string {
 		.join('\n');
 }
 
-/**
- * A reply inside a thread Sonar is tracking → capture it as extra context on
- * the ticket. This is how the answers to the "tell us more" prompt get onto
- * the bug. Replies don't need to @-mention Sonar (that would be tedious); we
- * only act when the thread's root message is one we already filed.
- */
-async function handleThreadReply(event: SlackMessageEvent): Promise<void> {
-	const replyText = stripMentions(event.text ?? '');
-	const files = event.files ?? [];
-	if (!replyText && files.length === 0) return;
-
-	const allBugs = await getAllBugs();
-	const bug = allBugs.find((b) =>
-		(b.slackThreads ?? []).some(
-			(t) => t.channel === event.channel && t.ts === event.thread_ts
-		)
-	);
-	if (!bug) return;
-
-	// Idempotency: Slack retries events, so skip a reply ts we've already stored.
-	const priorReplies = Array.isArray(bug.meta?.slackReplies)
-		? (bug.meta!.slackReplies as SlackReply[])
-		: [];
-	if (priorReplies.some((r) => r.ts === event.ts)) return;
-
-	const reporter = (await usersInfo(event.user!)).displayName;
-	const entry: SlackReply = {
-		ts: event.ts!,
-		reporter,
-		text: replyText,
-		at: new Date().toISOString()
-	};
-
-	// Fold any newly-attached files onto the ticket too.
-	const newAttachments: SlackAttachment[] = files.map((f) => ({
-		id: f.id,
-		...(f.name ? { name: f.name } : {}),
-		...(f.mimetype ? { mimetype: f.mimetype } : {}),
-		...(f.url_private ? { urlPrivate: f.url_private } : {}),
-		...(f.permalink ? { permalink: f.permalink } : {}),
-		isImage: Boolean(f.mimetype?.startsWith('image/'))
-	}));
-
-	// Surface the reply on the ticket body so it shows in the cluster panel,
-	// and keep the structured log in meta for anything that wants it.
-	const appended = replyText
-		? `${bug.description}\n\n↪ ${reporter}: ${replyText}`
-		: bug.description;
-
-	await updateMockBug(bug._id, {
-		description: appended,
-		meta: { ...(bug.meta ?? {}), slackReplies: [...priorReplies, entry] },
-		...(newAttachments.length
-			? { attachments: [...(bug.attachments ?? []), ...newAttachments] }
-			: {})
-	});
-
-	// Quietly confirm capture (best-effort — no-op without reactions:write).
-	await addReaction(event.channel!, event.ts!, 'white_check_mark');
-}
-
 /** Strip Sonar's / any user mention tokens and collapse whitespace. */
 function stripMentions(raw: string): string {
 	return raw.replace(/<@[A-Z0-9]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -367,14 +308,6 @@ function deriveTitle(messageText: string, files: SlackFile[]): string {
 	const firstLine = messageText.split('\n').map((l) => l.trim()).find(Boolean);
 	const base = firstLine || files.map((f) => f.name).filter(Boolean)[0] || 'Slack report';
 	return base.length > 120 ? base.slice(0, 117) + '...' : base;
-}
-
-// One captured follow-up reply, stored under bug.meta.slackReplies.
-interface SlackReply {
-	ts: string;
-	reporter: string;
-	text: string;
-	at: string;
 }
 
 // --- Slack event payload shapes (only the fields we read) ---

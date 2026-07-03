@@ -99,16 +99,33 @@ async function callSlack(method: string, params: Record<string, unknown>): Promi
 	return data;
 }
 
-/** Post a message. Pass `thread_ts` to reply in-thread. */
+/**
+ * Post a message. Pass `thread_ts` to reply in-thread. `blocks` (Block Kit) is
+ * form-encoded as a JSON string; `text` is kept as the notification fallback.
+ */
 export async function postMessage(args: {
 	channel: string;
 	text: string;
 	thread_ts?: string;
+	blocks?: unknown[];
 }): Promise<SlackApiResult> {
 	return callSlack('chat.postMessage', {
 		channel: args.channel,
 		text: args.text,
-		...(args.thread_ts ? { thread_ts: args.thread_ts } : {})
+		...(args.thread_ts ? { thread_ts: args.thread_ts } : {}),
+		...(args.blocks ? { blocks: JSON.stringify(args.blocks) } : {})
+	});
+}
+
+/**
+ * Open a modal in response to a user interaction. `triggerId` comes from a
+ * block-action / shortcut payload and is single-use with a ~3s TTL, so this
+ * must be called promptly. The `view` is form-encoded as a JSON string.
+ */
+export async function openView(triggerId: string, view: unknown): Promise<SlackApiResult> {
+	return callSlack('views.open', {
+		trigger_id: triggerId,
+		view: JSON.stringify(view)
 	});
 }
 
