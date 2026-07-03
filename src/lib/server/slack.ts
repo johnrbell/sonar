@@ -124,6 +124,16 @@ export async function getPermalink(channel: string, messageTs: string): Promise<
 	return res.ok ? (res.permalink as string | undefined) : undefined;
 }
 
+/**
+ * Add an emoji reaction to a message (best-effort — used to silently confirm a
+ * follow-up reply was captured onto a ticket). Requires the `reactions:write`
+ * scope; if it's missing the call just warns and returns, so callers never
+ * need to guard on it.
+ */
+export async function addReaction(channel: string, timestamp: string, name = 'white_check_mark'): Promise<void> {
+	await callSlack('reactions.add', { channel, timestamp, name });
+}
+
 export interface SlackUserProfile {
 	id: string;
 	displayName: string;
