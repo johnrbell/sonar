@@ -64,18 +64,33 @@ interface SlackApiResult {
 	[key: string]: unknown;
 }
 
-/** POST a JSON body to a Slack Web API method with the bot token. */
-async function callSlack(method: string, body: Record<string, unknown>): Promise<SlackApiResult> {
+/**
+ * Call a Slack Web API method with the bot token.
+ *
+ * Uses `application/x-www-form-urlencoded`, NOT JSON. This matters: Slack's
+ * read/GET-style methods (users.info, chat.getPermalink, conversations.info)
+ * do not parse arguments from a JSON body and fail with `user_not_found` /
+ * `invalid_arguments`. Form-encoding is accepted by every method we use
+ * (chat.postMessage, reactions.add, conversations.join included), so we encode
+ * uniformly to avoid silent per-method breakage.
+ */
+async function callSlack(method: string, params: Record<string, unknown>): Promise<SlackApiResult> {
 	const token = getBotToken();
 	if (!token) return { ok: false, error: 'no_bot_token' };
+
+	const form = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value === undefined || value === null) continue;
+		form.set(key, typeof value === 'string' ? value : String(value));
+	}
 
 	const res = await fetch(`${SLACK_API}/${method}`, {
 		method: 'POST',
 		headers: {
 			authorization: `Bearer ${token}`,
-			'content-type': 'application/json; charset=utf-8'
+			'content-type': 'application/x-www-form-urlencoded; charset=utf-8'
 		},
-		body: JSON.stringify(body)
+		body: form.toString()
 	});
 	const data = (await res.json().catch(() => ({ ok: false, error: 'bad_json' }))) as SlackApiResult;
 	if (!data.ok) {
