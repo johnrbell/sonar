@@ -10,6 +10,7 @@ import {
 } from '$lib/server/slack';
 import { getAllBugs, insertBug, updateMockBug } from '$lib/mocks';
 import { vectorizeQuery, similarityScore } from '$lib/cluster';
+import { lookupKnowledge, type KnowledgeLookup, type SourceResult } from '$lib/server/knowledge';
 import { DEFAULT_DEDUPE_THRESHOLD } from '$lib/constants';
 import type { Bug, SlackThread, SlackAttachment } from '$lib/schemas';
 
@@ -23,13 +24,15 @@ import type { Bug, SlackThread, SlackAttachment } from '$lib/schemas';
  *
  * Flow:
  *   - url_verification → echo the challenge (Slack's setup handshake)
- *   - top-level message | app_mention that @-mentions Sonar → dedupe against
- *     existing bugs, then either append the thread to the matched bug or file a
- *     new one (capturing file attachments), and reply with an acknowledgement
- *     that prompts the reporter for more detail.
+ *   - top-level message | app_mention that @-mentions Sonar:
+ *       · a *question* → run a knowledge lookup (previous Slack convos +
+ *         Confluence + codebase) and reply with what we found; also file it as
+ *         a question ticket so the team can track the answer.
+ *       · otherwise (bug/feature) → dedupe against existing bugs, then append
+ *         the thread to the matched bug or file a new one (capturing file
+ *         attachments), and reply prompting the reporter for more detail.
  *   - a reply inside a thread Sonar is already tracking → captured as extra
- *     context and appended to that ticket (no @-mention required), so the
- *     answers to the prompt actually land on the bug.
+ *     context and appended to that ticket (no @-mention required).
  */
 export const POST: RequestHandler = async ({ request }) => {
 	// The raw body is required for signature verification — read it once.
@@ -126,6 +129,13 @@ async function handleEvent(event: SlackMessageEvent): Promise<void> {
 		isImage: Boolean(f.mimetype?.startsWith('image/'))
 	}));
 
+	// A question gets answered from the knowledge sources (and filed for
+	// tracking) rather than run through bug dedupe.
+	if (looksLikeQuestion(messageText)) {
+		await handleQuestion(event, messageText, reporter, thread, attachments, allBugs);
+		return;
+	}
+
 	// Dedupe against existing (non-archived) bug-type tickets.
 	const match = findDuplicate(messageText || (files[0]?.name ?? ''), allBugs);
 
@@ -175,6 +185,88 @@ async function handleEvent(event: SlackMessageEvent): Promise<void> {
 			`• *Severity* (low / medium / high)\n\n` +
 			`I'll attach your replies to this ticket automatically.`
 	});
+}
+
+/**
+ * Heuristic intake classifier: is this message a question (vs a bug/feature
+ * report)? Deliberately simple + dependency-free — a trailing "?" or a leading
+ * interrogative word. Good enough to route @-mentions; the corpus search does
+ * the heavy lifting from there.
+ */
+function looksLikeQuestion(text: string): boolean {
+	const t = text.trim().toLowerCase();
+	if (!t) return false;
+	if (t.includes('?')) return true;
+	return /^(how|what|whats|why|when|where|who|which|can|could|would|should|does|do|did|is|are|will|has|have|any(one|body)?)\b/.test(
+		t
+	);
+}
+
+/**
+ * Question flow: file the question as a ticket (so it's tracked + becomes part
+ * of the searchable Slack history), run the knowledge lookup across all three
+ * sources, and reply in-thread with what we found.
+ */
+async function handleQuestion(
+	event: SlackMessageEvent,
+	question: string,
+	reporter: string,
+	thread: SlackThread,
+	attachments: SlackAttachment[],
+	allBugs: Bug[]
+): Promise<void> {
+	const title = deriveTitle(question, []);
+	const bug: Bug = {
+		_id: crypto.randomUUID(),
+		title,
+		description: question,
+		reporter,
+		source: 'slack',
+		severity: 'low',
+		status: 'open',
+		areas: [],
+		intakeType: 'question',
+		createdAt: thread.addedAt ?? new Date().toISOString(),
+		slackThreads: [thread],
+		...(attachments.length ? { attachments } : {})
+	};
+	await insertBug(bug);
+
+	// Search the *prior* corpus (the new question isn't in allBugs yet).
+	const knowledge = lookupKnowledge(question, allBugs, { excludeId: bug._id });
+
+	await postMessage({
+		channel: event.channel!,
+		thread_ts: event.ts!,
+		text: formatKnowledgeReply(knowledge)
+	});
+}
+
+/** Render a knowledge lookup as a Slack mrkdwn reply. */
+function formatKnowledgeReply(k: KnowledgeLookup): string {
+	const lines: string[] = [":mag: Here's what I found for your question:", ''];
+
+	lines.push('*Previous Slack conversations:*');
+	lines.push(renderSource(k.slack));
+	lines.push('');
+	lines.push(`*Confluence docs:* ${k.confluence.connected ? '' : '_not connected yet_'}`);
+	if (k.confluence.connected) lines.push(renderSource(k.confluence));
+	lines.push(`*Codebase (ike):* ${k.codebase.connected ? '' : '_not connected yet_'}`);
+	if (k.codebase.connected) lines.push(renderSource(k.codebase));
+	lines.push('');
+	lines.push("I've logged this as a question so the team can follow up.");
+	return lines.join('\n');
+}
+
+function renderSource(s: SourceResult): string {
+	if (s.hits.length === 0) return `  _${s.note ?? 'Nothing found.'}_`;
+	return s.hits
+		.map((h) => {
+			const pct = Math.round(h.similarity * 100);
+			const heading = h.url ? `<${h.url}|${h.title}>` : `*${h.title}*`;
+			return `  • ${heading} — ${h.snippet} _(${pct}% match)_`;
+		})
+		.join('\n');
 }
 
 /**
