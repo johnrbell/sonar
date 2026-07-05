@@ -23,11 +23,20 @@
 	} from '$lib/stages';
 	import { buildAsanaTaskDescription } from '$lib/asana-stamp';
 	import '$lib/styles/sonar.css';
+	import { restoreLocalPrefs } from '../../components/page-prefs';
 	import StageStepper from './StageStepper.svelte';
 	import StageHistoryLog from './StageHistoryLog.svelte';
 
 	type Props = { data: { bugId: string } };
 	let { data }: Props = $props();
+
+	// The theme tokens (--sonar-*) are only defined under
+	// `.sonar-root[data-theme='light'|'dark']`. Without this attribute NONE
+	// of the color variables resolve, so e.g. the Advance button (styled
+	// `background: var(--sonar-accent)` + white text) renders white-on-white
+	// and disappears. Mirror the main page: default light, restore the saved
+	// preference on mount, and persist toggles under the same localStorage key.
+	let theme = $state<'light' | 'dark'>('light');
 
 	let bug = $state<Bug | null>(null);
 	let loading = $state(true);
@@ -73,8 +82,19 @@
 	}
 
 	onMount(() => {
+		const prefs = restoreLocalPrefs();
+		if (prefs.theme) theme = prefs.theme;
 		loadBug();
 	});
+
+	function toggleTheme() {
+		theme = theme === 'light' ? 'dark' : 'light';
+		try {
+			localStorage.setItem('sonar.theme', theme);
+		} catch (e) {
+			console.warn('[sonar] localStorage unavailable', e);
+		}
+	}
 
 	// Pessimistic view of the in-flight bug used for canTransition checks:
 	// the live `bug` doc reflects the LAST server response, but the user
@@ -217,7 +237,7 @@
 	<title>Sonar resolver · {bug?.title ?? data.bugId}</title>
 </svelte:head>
 
-<div class="sonar-root" style="overflow-y: auto;">
+<div class="sonar-root" data-theme={theme} style="overflow-y: auto;">
 	<header class="sonar-header">
 		<div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
 			<div class="flex items-center gap-3">
@@ -229,6 +249,14 @@
 				<div class="text-white font-medium">Ticket Resolver</div>
 				<span class="text-xs text-white/60 font-mono">{data.bugId}</span>
 			</div>
+			<button
+				type="button"
+				onclick={toggleTheme}
+				aria-label="Toggle light/dark theme"
+				class="text-xs text-white/85 hover:text-white transition px-2.5 py-1 rounded border border-white/25 hover:bg-white/10"
+			>
+				{theme === 'light' ? 'Dark mode' : 'Light mode'}
+			</button>
 		</div>
 	</header>
 
