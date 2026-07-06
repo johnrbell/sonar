@@ -60,8 +60,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (payload.type === 'event_callback' && payload.event) {
 		// Acknowledge fast; do the work inline (single workspace, low volume).
 		// Errors are logged, never surfaced to Slack (which would just retry).
+		// The request origin is the deployment host Slack was configured to
+		// call (e.g. https://sonar-five-eta.vercel.app), so it's the right base
+		// for building "View in Sonar" deep links back to the UI.
 		try {
-			await handleEvent(payload.event);
+			await handleEvent(payload.event, new URL(request.url).origin);
 		} catch (err) {
 			console.error('[sonar.slack] event handling failed:', err);
 		}
@@ -71,7 +74,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	return json({ ok: true });
 };
 
-async function handleEvent(event: SlackMessageEvent): Promise<void> {
+async function handleEvent(event: SlackMessageEvent, origin: string): Promise<void> {
 	if (event.type !== 'message' && event.type !== 'app_mention') return;
 	// Ignore bot messages, our own echoes, and edit/delete/join noise. Keep the
 	// `file_share` subtype (a user uploading a file with a comment).
@@ -137,10 +140,18 @@ async function handleEvent(event: SlackMessageEvent): Promise<void> {
 			slackThreads: threads,
 			...(mergedAttachments.length ? { attachments: mergedAttachments } : {})
 		});
+		// Offer the same follow-ups as a new ticket: capture more detail on this
+		// duplicate report via the modal, and jump straight to the ticket in the
+		// Sonar UI (where every linked thread shows up in the cluster panel).
+		const linkedText = `:mag: Linked to an existing Sonar ticket: *${match.title}*. Tracking this thread as another report.`;
 		await postMessage({
 			channel: event.channel,
 			thread_ts: event.ts,
-			text: `:mag: Linked to an existing Sonar ticket: *${match.title}*. Tracking this thread as another report.`
+			text: linkedText,
+			blocks: [
+				{ type: 'section', text: { type: 'mrkdwn', text: linkedText } },
+				ackActions(match._id, origin)
+			]
 		});
 		return;
 	}
@@ -173,20 +184,44 @@ async function handleEvent(event: SlackMessageEvent): Promise<void> {
 				type: 'section',
 				text: { type: 'mrkdwn', text: ackText }
 			},
-			{
-				type: 'actions',
-				elements: [
-					{
-						type: 'button',
-						text: { type: 'plain_text', text: 'Add details', emoji: true },
-						style: 'primary',
-						action_id: 'sonar_add_details',
-						value: bug._id
-					}
-				]
-			}
+			ackActions(bug._id, origin)
 		]
 	});
+}
+
+/** Absolute deep link that focuses a single ticket on the Sonar radar. */
+function sonarBugUrl(origin: string, bugId: string): string {
+	return `${origin}/?bug=${encodeURIComponent(bugId)}`;
+}
+
+/**
+ * The action row attached to an intake ack. Shared by the new-ticket and
+ * deduped-into-existing replies so both offer the same follow-ups:
+ *   - "Add details" → opens the modal for this ticket (block_actions handled
+ *     in /api/slack/interactions; keyed off action_id `sonar_add_details`).
+ *   - "View in Sonar" → URL button deep-linking to the ticket in the UI. It
+ *     also posts a block_actions event, which the interactions handler simply
+ *     ignores (no matching action_id) and 200s.
+ */
+function ackActions(bugId: string, origin: string) {
+	return {
+		type: 'actions',
+		elements: [
+			{
+				type: 'button',
+				text: { type: 'plain_text', text: 'Add details', emoji: true },
+				style: 'primary',
+				action_id: 'sonar_add_details',
+				value: bugId
+			},
+			{
+				type: 'button',
+				text: { type: 'plain_text', text: 'View in Sonar', emoji: true },
+				url: sonarBugUrl(origin, bugId),
+				action_id: 'sonar_view_ticket'
+			}
+		]
+	};
 }
 
 /**
